@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "lifetime-stat-tracker",
+  "version": "${version}",
+  "name": "Lifetime Stat Tracker",
+  "description": "Track your Minecraft statistics across all worlds, even after they're deleted. Perfect for hardcore players who want to preserve their lifetime achievements.",
+  "authors": ["Tempest Studios"],
+  "contact": {
+    "homepage": "https://github.com/tempeststudios/lifetime-stat-tracker"
+  },
+  "license": "MIT",
+  "icon": "assets/lifetime-stat-tracker/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["tempeststudios.lifetimestattracker.LifetimeStatTrackerClient"]
+  },
+  "mixins": [
+    {
+      "config": "lifetime-stat-tracker.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}
