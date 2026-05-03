@@ -10,8 +10,9 @@
   },
   "license": "MIT",
   "icon": "assets/lifetime-stat-tracker/icon.png",
-  "environment": "client",
+  "environment": "*",
   "entrypoints": {
+    "server": ["tempeststudios.lifetimestattracker.LifetimeStatTracker"],
     "client": ["tempeststudios.lifetimestattracker.LifetimeStatTrackerClient"]
   },
   "mixins": [

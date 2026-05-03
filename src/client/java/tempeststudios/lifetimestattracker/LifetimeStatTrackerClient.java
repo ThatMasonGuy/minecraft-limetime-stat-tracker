@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.network.chat.Component;
@@ -23,7 +24,15 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        LifetimeStatTrackerNetworking.registerPayloads();
         LifetimeStatsManager.get().init();
+
+        ClientPlayNetworking.registerGlobalReceiver(
+            LifetimeStatTrackerNetworking.WorldIdentityPayload.TYPE,
+            (payload, context) -> context.client().execute(() -> {
+                LifetimeStatsManager.get().onServerWorldIdentity(payload.worldId(), payload.displayName());
+                LifetimeStatsManager.get().requestStatsNow("server-world-identity", true);
+            }));
 
         // Register commands
         ClientCommandRegistrationCallback.EVENT.register(this::registerCommands);
@@ -33,13 +42,14 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
             System.out.println("[LifetimeStatTracker] JOIN detected. Requesting stats...");
 
             // Request immediately
-            LifetimeStatsManager.get().requestStatsNow("join-immediate");
+            LifetimeStatsManager.get().requestStatsNow("join-immediate", true);
 
             // And again ~2s later
             requestCountdownTicks = 40;
         });
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            LifetimeStatsManager.get().requestStatsNow("disconnect-final", true);
             LifetimeStatsManager.get().onDisconnect();
             System.out.println("[LifetimeStatTracker] DISCONNECT detected.");
         });
@@ -49,7 +59,7 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
             if (requestCountdownTicks >= 0) {
                 requestCountdownTicks--;
                 if (requestCountdownTicks == 0) {
-                    LifetimeStatsManager.get().requestStatsNow("join-delayed");
+                    LifetimeStatsManager.get().requestStatsNow("join-delayed", true);
                     requestCountdownTicks = -1;
                 }
             }
@@ -79,6 +89,10 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
                     .executes(this::showAdvancements))
                 .then(ClientCommandManager.literal("current")
                     .executes(this::showCurrentWorld))
+                .then(ClientCommandManager.literal("debug")
+                    .executes(this::showDebug))
+                .then(ClientCommandManager.literal("clear")
+                    .executes(this::clearStoredData))
                 .then(ClientCommandManager.literal("help")
                     .executes(this::showHelp))
         );
@@ -98,6 +112,10 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
                     .executes(this::showAdvancements))
                 .then(ClientCommandManager.literal("current")
                     .executes(this::showCurrentWorld))
+                .then(ClientCommandManager.literal("debug")
+                    .executes(this::showDebug))
+                .then(ClientCommandManager.literal("clear")
+                    .executes(this::clearStoredData))
                 .then(ClientCommandManager.literal("help")
                     .executes(this::showHelp))
         );
@@ -159,9 +177,11 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
             ctx.getSource().sendFeedback(Component.literal("By World:").withStyle(ChatFormatting.YELLOW));
 
             worlds.forEach((handle, ws) -> {
-                long worldTime = ws.stats.getOrDefault("minecraft:custom:minecraft:play_time", 0L);
+                Map<String, Long> stats = safeStats(ws);
+                long worldTime = stats.getOrDefault("minecraft:custom:minecraft:play_time", 0L);
                 if (worldTime > 0) {
-                    ctx.getSource().sendFeedback(Component.literal("  " + ws.displayName + ": ").withStyle(ChatFormatting.GRAY)
+                    String displayName = mgr.getWorldDisplayName(handle, ws);
+                    ctx.getSource().sendFeedback(Component.literal("  " + displayName + ": ").withStyle(ChatFormatting.GRAY)
                         .append(Component.literal(LifetimeStatsManager.formatPlayTime(worldTime)).withStyle(ChatFormatting.WHITE)));
                 }
             });
@@ -183,15 +203,17 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
         }
 
         worlds.forEach((handle, ws) -> {
-            long playTime = ws.stats.getOrDefault("minecraft:custom:minecraft:play_time", 0L);
+            Map<String, Long> stats = safeStats(ws);
+            long playTime = stats.getOrDefault("minecraft:custom:minecraft:play_time", 0L);
             String timeStr = LifetimeStatsManager.formatPlayTime(playTime);
+            String displayName = mgr.getWorldDisplayName(handle, ws);
 
             boolean isLocal = handle.startsWith("local:");
             ChatFormatting typeColor = isLocal ? ChatFormatting.GREEN : ChatFormatting.BLUE;
             String typePrefix = isLocal ? "[Local] " : "[Server] ";
 
             ctx.getSource().sendFeedback(Component.literal(typePrefix).withStyle(typeColor)
-                .append(Component.literal(ws.displayName).withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(displayName).withStyle(ChatFormatting.WHITE))
                 .append(Component.literal(" - " + timeStr).withStyle(ChatFormatting.GRAY)));
         });
 
@@ -208,7 +230,8 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
         // Find matching world
         Map.Entry<String, LifetimeStatsManager.WorldStats> match = null;
         for (Map.Entry<String, LifetimeStatsManager.WorldStats> entry : worlds.entrySet()) {
-            if (entry.getValue().displayName.toLowerCase().contains(searchName) ||
+            String displayName = mgr.getWorldDisplayName(entry.getKey(), entry.getValue()).toLowerCase();
+            if (displayName.contains(searchName) ||
                 entry.getKey().toLowerCase().contains(searchName)) {
                 match = entry;
                 break;
@@ -222,28 +245,30 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
 
         String handle = match.getKey();
         LifetimeStatsManager.WorldStats ws = match.getValue();
+        Map<String, Long> stats = safeStats(ws);
+        String displayName = mgr.getWorldDisplayName(handle, ws);
 
-        MutableComponent header = Component.literal("═══ " + ws.displayName + " ═══").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+        MutableComponent header = Component.literal("═══ " + displayName + " ═══").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
         ctx.getSource().sendFeedback(header);
 
         // Show key stats
-        long playTime = ws.stats.getOrDefault("minecraft:custom:minecraft:play_time", 0L);
+        long playTime = stats.getOrDefault("minecraft:custom:minecraft:play_time", 0L);
         ctx.getSource().sendFeedback(Component.literal("⏱ Play Time: ").withStyle(ChatFormatting.AQUA)
             .append(Component.literal(LifetimeStatsManager.formatPlayTime(playTime)).withStyle(ChatFormatting.WHITE)));
 
-        long distance = ws.stats.getOrDefault("minecraft:custom:minecraft:walk_one_cm", 0L);
+        long distance = stats.getOrDefault("minecraft:custom:minecraft:walk_one_cm", 0L);
         ctx.getSource().sendFeedback(Component.literal("🚶 Distance: ").withStyle(ChatFormatting.AQUA)
             .append(Component.literal(LifetimeStatsManager.formatDistance(distance)).withStyle(ChatFormatting.WHITE)));
 
-        long jumps = ws.stats.getOrDefault("minecraft:custom:minecraft:jump", 0L);
+        long jumps = stats.getOrDefault("minecraft:custom:minecraft:jump", 0L);
         ctx.getSource().sendFeedback(Component.literal("⬆ Jumps: ").withStyle(ChatFormatting.AQUA)
             .append(Component.literal(String.format("%,d", jumps)).withStyle(ChatFormatting.WHITE)));
 
-        long mobKills = ws.stats.getOrDefault("minecraft:custom:minecraft:mob_kills", 0L);
+        long mobKills = stats.getOrDefault("minecraft:custom:minecraft:mob_kills", 0L);
         ctx.getSource().sendFeedback(Component.literal("⚔ Mob Kills: ").withStyle(ChatFormatting.AQUA)
             .append(Component.literal(String.format("%,d", mobKills)).withStyle(ChatFormatting.WHITE)));
 
-        long deaths = ws.stats.getOrDefault("minecraft:custom:minecraft:deaths", 0L);
+        long deaths = stats.getOrDefault("minecraft:custom:minecraft:deaths", 0L);
         ctx.getSource().sendFeedback(Component.literal("💀 Deaths: ").withStyle(ChatFormatting.AQUA)
             .append(Component.literal(String.format("%,d", deaths)).withStyle(ChatFormatting.WHITE)));
 
@@ -325,6 +350,12 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
         ctx.getSource().sendFeedback(Component.literal("/lst current").withStyle(ChatFormatting.YELLOW)
             .append(Component.literal(" - Show current world handle").withStyle(ChatFormatting.GRAY)));
 
+        ctx.getSource().sendFeedback(Component.literal("/lst debug").withStyle(ChatFormatting.YELLOW)
+            .append(Component.literal(" - Show temporary debug values").withStyle(ChatFormatting.GRAY)));
+
+        ctx.getSource().sendFeedback(Component.literal("/lst clear").withStyle(ChatFormatting.YELLOW)
+            .append(Component.literal(" - Back up and clear tracker data").withStyle(ChatFormatting.GRAY)));
+
         ctx.getSource().sendFeedback(Component.literal(""));
         ctx.getSource().sendFeedback(Component.literal("Stats are saved to: ").withStyle(ChatFormatting.GRAY)
             .append(Component.literal(mgr.getModDir().toString()).withStyle(ChatFormatting.WHITE)));
@@ -332,8 +363,88 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
         return 1;
     }
 
+    private int showDebug(CommandContext<FabricClientCommandSource> ctx) {
+        LifetimeStatsManager mgr = LifetimeStatsManager.get();
+        String handle = mgr.getCurrentHandle();
+        Map<String, Long> totals = mgr.getTotals();
+        Map<String, Long> snapshot = mgr.getCurrentSnapshot();
+        LifetimeStatsManager.WorldStats currentWorld = mgr.getWorldStats().get(handle);
+        Map<String, Long> worldStats = safeStats(currentWorld);
+
+        ctx.getSource().sendFeedback(Component.literal("═══ LST Debug ═══").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+        ctx.getSource().sendFeedback(Component.literal("Handle: ").withStyle(ChatFormatting.AQUA)
+            .append(Component.literal(shorten(handle, 46)).withStyle(ChatFormatting.WHITE)));
+        ctx.getSource().sendFeedback(Component.literal("World ID: ").withStyle(ChatFormatting.AQUA)
+            .append(Component.literal(shorten(mgr.getServerWorldIdentityDebug(), 46)).withStyle(ChatFormatting.WHITE)));
+        ctx.getSource().sendFeedback(Component.literal("Requests: ").withStyle(ChatFormatting.AQUA)
+            .append(Component.literal(mgr.getLastRequestReason() + " " + ageSeconds(mgr.getLastRequestMs()) + "s ago").withStyle(ChatFormatting.WHITE)));
+        ctx.getSource().sendFeedback(Component.literal("Packet: ").withStyle(ChatFormatting.AQUA)
+            .append(Component.literal(mgr.getLastStatsPacketKeys() + " keys, +" + mgr.getLastAddedTotal()
+                + ", deltas " + mgr.getLastPositiveDeltaKeys()
+                + ", skip " + mgr.getLastNonAdditiveUpdates()
+                + ", " + ageSeconds(mgr.getLastStatsPacketMs()) + "s ago").withStyle(ChatFormatting.WHITE)));
+        ctx.getSource().sendFeedback(Component.literal("Totals J/W/P: ").withStyle(ChatFormatting.AQUA)
+            .append(Component.literal(formatDebugTriple(totals)).withStyle(ChatFormatting.WHITE)));
+        ctx.getSource().sendFeedback(Component.literal("Snap J/W/P: ").withStyle(ChatFormatting.AQUA)
+            .append(Component.literal(formatDebugTriple(snapshot)).withStyle(ChatFormatting.WHITE)));
+        ctx.getSource().sendFeedback(Component.literal("World J/W/P: ").withStyle(ChatFormatting.AQUA)
+            .append(Component.literal(formatDebugTriple(worldStats)).withStyle(ChatFormatting.WHITE)));
+        ctx.getSource().sendFeedback(Component.literal("Counts: ").withStyle(ChatFormatting.AQUA)
+            .append(Component.literal("worlds " + mgr.getWorldCount()
+                + ", adv " + mgr.getAllAdvancements().size()
+                + ", totalKeys " + totals.size()
+                + ", snapKeys " + snapshot.size()).withStyle(ChatFormatting.WHITE)));
+
+        return 1;
+    }
+
+    private int clearStoredData(CommandContext<FabricClientCommandSource> ctx) {
+        LifetimeStatsManager mgr = LifetimeStatsManager.get();
+        String backupPath = mgr.clearStoredDataWithBackup();
+        if (backupPath == null) {
+            ctx.getSource().sendFeedback(Component.literal("LST clear failed. Check latest.log.").withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        ctx.getSource().sendFeedback(Component.literal("LST data cleared.").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
+        ctx.getSource().sendFeedback(Component.literal("Backup: ").withStyle(ChatFormatting.AQUA)
+            .append(Component.literal(backupPath).withStyle(ChatFormatting.WHITE)));
+        ctx.getSource().sendFeedback(Component.literal("Run /lst debug after moving/jumping.").withStyle(ChatFormatting.GRAY));
+        return 1;
+    }
+
     private static String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    private static String formatDebugTriple(Map<String, Long> stats) {
+        return "J " + stats.getOrDefault("minecraft:custom:minecraft:jump", 0L)
+            + " / W " + stats.getOrDefault("minecraft:custom:minecraft:walk_one_cm", 0L)
+            + " / P " + stats.getOrDefault("minecraft:custom:minecraft:play_time", 0L);
+    }
+
+    private static long ageSeconds(long timestampMs) {
+        if (timestampMs <= 0L) {
+            return -1L;
+        }
+        return Math.max(0L, (System.currentTimeMillis() - timestampMs) / 1000L);
+    }
+
+    private static String shorten(String value, int maxLength) {
+        if (value == null) {
+            return "unknown";
+        }
+        if (value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength - 3) + "...";
+    }
+
+    private static Map<String, Long> safeStats(LifetimeStatsManager.WorldStats worldStats) {
+        if (worldStats == null || worldStats.stats == null) {
+            return Map.of();
+        }
+        return worldStats.stats;
     }
 }
