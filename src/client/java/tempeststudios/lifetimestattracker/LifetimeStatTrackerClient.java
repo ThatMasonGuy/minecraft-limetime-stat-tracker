@@ -21,6 +21,8 @@ import java.util.Set;
 public class LifetimeStatTrackerClient implements ClientModInitializer {
 
     private int requestCountdownTicks = -1;
+    private int identityRequestCountdownTicks = -1;
+    private int identityRequestSecondCountdownTicks = -1;
 
     @Override
     public void onInitializeClient() {
@@ -28,11 +30,17 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
         LifetimeStatsManager.get().init();
 
         ClientPlayNetworking.registerGlobalReceiver(
-            LifetimeStatTrackerNetworking.WorldIdentityPayload.TYPE,
-            (payload, context) -> context.client().execute(() -> {
-                LifetimeStatsManager.get().onServerWorldIdentity(payload.worldId(), payload.displayName());
-                LifetimeStatsManager.get().requestStatsNow("server-world-identity", true);
-            }));
+                LifetimeStatTrackerNetworking.WorldIdentityPayload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    LifetimeStatsManager.get().onServerWorldIdentity(payload.worldId(), payload.displayName());
+                    LifetimeStatsManager.get().requestStatsNow("server-world-identity", true);
+                }));
+        ClientPlayNetworking.registerGlobalReceiver(
+                LifetimeStatTrackerNetworking.WorldIdentityV2Payload.TYPE,
+                (payload, context) -> context.client().execute(() -> {
+                    LifetimeStatsManager.get().onServerWorldIdentity(payload.worldId(), payload.displayName());
+                    LifetimeStatsManager.get().requestStatsNow("server-world-identity-v" + payload.protocolVersion(), true);
+                }));
 
         // Register commands
         ClientCommandRegistrationCallback.EVENT.register(this::registerCommands);
@@ -40,6 +48,10 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             LifetimeStatsManager.get().onJoin();
             System.out.println("[LifetimeStatTracker] JOIN detected. Requesting stats...");
+
+            requestServerWorldIdentity("join-immediate");
+            identityRequestCountdownTicks = 20;
+            identityRequestSecondCountdownTicks = 60;
 
             // Request immediately
             LifetimeStatsManager.get().requestStatsNow("join-immediate", true);
@@ -64,14 +76,44 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
                 }
             }
 
+            if (identityRequestCountdownTicks >= 0) {
+                identityRequestCountdownTicks--;
+                if (identityRequestCountdownTicks == 0) {
+                    requestServerWorldIdentity("join-delayed-1s");
+                    identityRequestCountdownTicks = -1;
+                }
+            }
+
+            if (identityRequestSecondCountdownTicks >= 0) {
+                identityRequestSecondCountdownTicks--;
+                if (identityRequestSecondCountdownTicks == 0) {
+                    requestServerWorldIdentity("join-delayed-3s");
+                    identityRequestSecondCountdownTicks = -1;
+                }
+            }
+
             // periodic request (throttled inside manager)
             if (client.player != null) {
                 LifetimeStatsManager.get().requestStatsNow("periodic");
             }
+            LifetimeStatsManager.get().expireDisconnectGrace();
         });
 
         System.out.println("[LifetimeStatTracker] Loaded ✅");
         System.out.println("[LifetimeStatTracker] Writing to: " + LifetimeStatsManager.get().getModDir().toAbsolutePath());
+    }
+
+    private void requestServerWorldIdentity(String reason) {
+        try {
+            if (!ClientPlayNetworking.canSend(LifetimeStatTrackerNetworking.WorldIdentityRequestPayload.TYPE)) {
+                return;
+            }
+            ClientPlayNetworking.send(new LifetimeStatTrackerNetworking.WorldIdentityRequestPayload(
+                LifetimeStatTrackerNetworking.PROTOCOL_VERSION));
+            System.out.println("[LifetimeStatTracker] Requested server world identity (" + reason + ")");
+        } catch (Throwable t) {
+            System.out.println("[LifetimeStatTracker] Failed to request server world identity: " + t);
+        }
     }
 
     private void registerCommands(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandBuildContext registryAccess) {
@@ -85,6 +127,14 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
                 .then(ClientCommandManager.literal("world")
                     .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
                         .executes(this::showWorldStats)))
+                .then(ClientCommandManager.literal("seed")
+                    .then(ClientCommandManager.literal("world")
+                        .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                            .executes(this::seedWorld))))
+                .then(ClientCommandManager.literal("remove")
+                    .then(ClientCommandManager.literal("world")
+                        .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                            .executes(this::removeWorld))))
                 .then(ClientCommandManager.literal("advancements")
                     .executes(this::showAdvancements))
                 .then(ClientCommandManager.literal("current")
@@ -108,6 +158,14 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
                 .then(ClientCommandManager.literal("world")
                     .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
                         .executes(this::showWorldStats)))
+                .then(ClientCommandManager.literal("seed")
+                    .then(ClientCommandManager.literal("world")
+                        .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                            .executes(this::seedWorld))))
+                .then(ClientCommandManager.literal("remove")
+                    .then(ClientCommandManager.literal("world")
+                        .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                            .executes(this::removeWorld))))
                 .then(ClientCommandManager.literal("advancements")
                     .executes(this::showAdvancements))
                 .then(ClientCommandManager.literal("current")
@@ -316,6 +374,22 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
         return 1;
     }
 
+    private int seedWorld(CommandContext<FabricClientCommandSource> ctx) {
+        String name = StringArgumentType.getString(ctx, "name");
+        LifetimeStatsManager.OperationResult result = LifetimeStatsManager.get().queueManualSeed(name);
+        ctx.getSource().sendFeedback(Component.literal(result.message)
+            .withStyle(result.success ? ChatFormatting.GREEN : ChatFormatting.RED));
+        return result.success ? 1 : 0;
+    }
+
+    private int removeWorld(CommandContext<FabricClientCommandSource> ctx) {
+        String name = StringArgumentType.getString(ctx, "name");
+        LifetimeStatsManager.OperationResult result = LifetimeStatsManager.get().removeWorld(name);
+        ctx.getSource().sendFeedback(Component.literal(result.message)
+            .withStyle(result.success ? ChatFormatting.GREEN : ChatFormatting.RED));
+        return result.success ? 1 : 0;
+    }
+
     private int showCurrentWorld(CommandContext<FabricClientCommandSource> ctx) {
         LifetimeStatsManager mgr = LifetimeStatsManager.get();
         String handle = mgr.getCurrentHandle();
@@ -343,6 +417,12 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
 
         ctx.getSource().sendFeedback(Component.literal("/lst world <name>").withStyle(ChatFormatting.YELLOW)
             .append(Component.literal(" - Show stats for a specific world").withStyle(ChatFormatting.GRAY)));
+
+        ctx.getSource().sendFeedback(Component.literal("/lst seed world <name>").withStyle(ChatFormatting.YELLOW)
+            .append(Component.literal(" - Manually seed an unmodded server world").withStyle(ChatFormatting.GRAY)));
+
+        ctx.getSource().sendFeedback(Component.literal("/lst remove world <name>").withStyle(ChatFormatting.YELLOW)
+            .append(Component.literal(" - Remove a tracked world after backing up data").withStyle(ChatFormatting.GRAY)));
 
         ctx.getSource().sendFeedback(Component.literal("/lst advancements").withStyle(ChatFormatting.YELLOW)
             .append(Component.literal(" - Show advancement summary").withStyle(ChatFormatting.GRAY)));
@@ -382,6 +462,7 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
             .append(Component.literal(mgr.getLastStatsPacketKeys() + " keys, +" + mgr.getLastAddedTotal()
                 + ", deltas " + mgr.getLastPositiveDeltaKeys()
                 + ", skip " + mgr.getLastNonAdditiveUpdates()
+                + ", high-water " + mgr.getLastHighWaterSkips()
                 + ", " + ageSeconds(mgr.getLastStatsPacketMs()) + "s ago").withStyle(ChatFormatting.WHITE)));
         ctx.getSource().sendFeedback(Component.literal("Totals J/W/P: ").withStyle(ChatFormatting.AQUA)
             .append(Component.literal(formatDebugTriple(totals)).withStyle(ChatFormatting.WHITE)));

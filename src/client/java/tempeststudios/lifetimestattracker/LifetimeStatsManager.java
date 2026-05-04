@@ -25,6 +25,8 @@ public class LifetimeStatsManager {
     private static final String SNAPSHOTS_FILE = "snapshots.json";
     private static final String ADVANCEMENTS_FILE = "advancements.json";
     private static final String WORLD_STATS_FILE = "world_stats.json";
+    private static final String AGGREGATE_WORLD_ID = "aggregate";
+    private static final String MANUAL_WORLD_MARKER = ":manual:";
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type MAP_LONG_TYPE = new TypeToken<Map<String, Long>>() {
@@ -60,11 +62,18 @@ public class LifetimeStatsManager {
     private String serverWorldId = null;
     private String serverWorldDisplayName = null;
     private boolean waitingForServerWorldIdentity = false;
+    private String lastKnownHandle = "unknown";
+    private long disconnectGraceUntilMs = 0L;
+    private long serverIdentityFallbackAtMs = 0L;
+    private String preIdentityAggregateHandle = null;
+    private boolean preIdentityAggregateCreated = false;
+    private String pendingManualSeedName = null;
+    private String pendingManualSeedHandle = null;
 
     // throttling
     private long lastRequestMs = 0L;
     private String lastRequestReason = "none";
-    private static final long REQUEST_COOLDOWN_MS = 30_000;
+    private static final long REQUEST_COOLDOWN_MS = 10_000;
     private static final Set<String> NON_ADDITIVE_STATS = Set.of(
             "minecraft:custom:minecraft:time_since_death",
             "minecraft:custom:minecraft:time_since_rest");
@@ -75,6 +84,7 @@ public class LifetimeStatsManager {
     private int lastPositiveDeltaKeys = 0;
     private long lastAddedTotal = 0L;
     private int lastNonAdditiveUpdates = 0;
+    private int lastHighWaterSkips = 0;
 
     private boolean initialized = false;
 
@@ -126,23 +136,44 @@ public class LifetimeStatsManager {
         serverWorldId = null;
         serverWorldDisplayName = null;
         waitingForServerWorldIdentity = isConnectedToMultiplayerServer();
+        serverIdentityFallbackAtMs = waitingForServerWorldIdentity ? System.currentTimeMillis() + 3_000L : 0L;
+        disconnectGraceUntilMs = 0L;
+        lastKnownHandle = "unknown";
+        preIdentityAggregateHandle = null;
+        preIdentityAggregateCreated = false;
+        pendingManualSeedName = null;
+        pendingManualSeedHandle = null;
         currentHandle = computeHandle();
         waitingForFirstStatsPacket = true;
     }
 
     public void onDisconnect() {
+        if (isValidHandle(currentHandle)) {
+            lastKnownHandle = currentHandle;
+            disconnectGraceUntilMs = System.currentTimeMillis() + 5_000L;
+        }
         waitingForFirstStatsPacket = true;
-        serverWorldId = null;
-        serverWorldDisplayName = null;
-        waitingForServerWorldIdentity = false;
-        currentHandle = "unknown";
+    }
+
+    public void expireDisconnectGrace() {
+        if (disconnectGraceUntilMs > 0L && System.currentTimeMillis() > disconnectGraceUntilMs) {
+            disconnectGraceUntilMs = 0L;
+            lastKnownHandle = "unknown";
+            serverWorldId = null;
+            serverWorldDisplayName = null;
+            waitingForServerWorldIdentity = false;
+            serverIdentityFallbackAtMs = 0L;
+            currentHandle = "unknown";
+        }
     }
 
     public void onServerWorldIdentity(String worldId, String displayName) {
         serverWorldId = cleanIdentity(worldId);
         serverWorldDisplayName = cleanIdentity(displayName);
         waitingForServerWorldIdentity = false;
+        serverIdentityFallbackAtMs = 0L;
         currentHandle = computeHandle();
+        reconcilePreIdentityAggregate(currentHandle);
         waitingForFirstStatsPacket = true;
         System.out.println("[LifetimeStatTracker] Server world identity received: "
                 + serverWorldId + " (handle=" + currentHandle + ")");
@@ -198,6 +229,7 @@ public class LifetimeStatsManager {
         }
 
         currentHandle = handle;
+        lastKnownHandle = handle;
 
         Map<String, Long> packetSnapshot = toSnapshot(packetStats);
 
@@ -206,8 +238,27 @@ public class LifetimeStatsManager {
             return;
         }
 
+        if (pendingManualSeedHandle != null && isAggregateHandle(handle)) {
+            applyPendingManualSeed(packetSnapshot);
+            saveSnapshots();
+            saveTotals();
+            saveWorldStats();
+            lastStatsPacketMs = System.currentTimeMillis();
+            lastStatsPacketKeys = packetSnapshot.size();
+            lastPositiveDeltaKeys = 0;
+            lastAddedTotal = 0L;
+            lastNonAdditiveUpdates = 0;
+            lastHighWaterSkips = 0;
+            waitingForFirstStatsPacket = false;
+            return;
+        }
+
         Map<String, Long> prevSnapshot = snapshotsByHandle.get(handle);
         boolean firstTimeHandle = (prevSnapshot == null);
+        if (waitingForServerWorldIdentity && isAggregateHandle(handle)) {
+            preIdentityAggregateHandle = handle;
+            preIdentityAggregateCreated = firstTimeHandle;
+        }
         Map<String, Long> cumulativeSnapshot = firstTimeHandle
                 ? new HashMap<>()
                 : new HashMap<>(prevSnapshot);
@@ -220,6 +271,7 @@ public class LifetimeStatsManager {
         long added = 0;
         int positives = 0;
         int nonAdditiveUpdates = 0;
+        int highWaterSkips = 0;
 
         if (firstTimeHandle) {
             // First time seeing this handle: seed totals with the current world/server stats.
@@ -247,23 +299,29 @@ public class LifetimeStatsManager {
                 String key = e.getKey();
                 long cur = e.getValue();
                 long prev = prevSnapshot.getOrDefault(key, 0L);
-                cumulativeSnapshot.put(key, cur);
 
                 long delta = cur - prev;
                 if (delta > 0 && isAdditiveStat(key)) {
+                    cumulativeSnapshot.put(key, cur);
                     totals.merge(key, delta, Long::sum);
                     ws.stats.merge(key, delta, Long::sum);
                     added += delta;
                     positives++;
                 } else if (!isAdditiveStat(key)) {
+                    cumulativeSnapshot.put(key, cur);
                     nonAdditiveUpdates++;
+                } else if (usesHighWaterSnapshots(handle)) {
+                    highWaterSkips++;
+                } else {
+                    cumulativeSnapshot.put(key, cur);
                 }
             }
             System.out.println("[LifetimeStatTracker] Delta-flush ✅ handle=" + handle
                     + " stats=" + packetSnapshot.size()
                     + " positives=" + positives
                     + " added=" + added
-                    + " nonAdditiveUpdates=" + nonAdditiveUpdates);
+                    + " nonAdditiveUpdates=" + nonAdditiveUpdates
+                    + " highWaterSkips=" + highWaterSkips);
         }
 
         // Persist everything
@@ -277,6 +335,7 @@ public class LifetimeStatsManager {
         lastPositiveDeltaKeys = positives;
         lastAddedTotal = added;
         lastNonAdditiveUpdates = nonAdditiveUpdates;
+        lastHighWaterSkips = highWaterSkips;
 
         waitingForFirstStatsPacket = false;
     }
@@ -364,6 +423,88 @@ public class LifetimeStatsManager {
     // ─────────────────────────────────────────────────────────────
     // Public API for commands
     // ─────────────────────────────────────────────────────────────
+
+    public OperationResult queueManualSeed(String name) {
+        if (!initialized) {
+            init();
+        }
+
+        String aggregateHandle = computeHandle();
+        if (!isAggregateHandle(aggregateHandle)) {
+            return OperationResult.error("Manual seed is only available on unmodded server/Realm aggregate handles.");
+        }
+
+        String cleanedName = cleanIdentity(name);
+        if (cleanedName == null) {
+            return OperationResult.error("Seed name cannot be blank.");
+        }
+
+        pendingManualSeedName = cleanedName;
+        pendingManualSeedHandle = manualHandleForAggregate(aggregateHandle, cleanedName);
+        requestStatsNow("manual-seed-" + sanitizeHandlePart(cleanedName), true);
+        return OperationResult.ok("Queued seed for '" + cleanedName + "'. It will apply to the next stats packet.");
+    }
+
+    public OperationResult removeWorld(String query) {
+        if (!initialized) {
+            init();
+        }
+
+        String cleanedQuery = cleanIdentity(query);
+        if (cleanedQuery == null) {
+            return OperationResult.error("World name cannot be blank.");
+        }
+
+        List<String> matches = findMatchingWorldHandles(cleanedQuery);
+        if (matches.isEmpty()) {
+            return OperationResult.error("No tracked world found matching: " + cleanedQuery);
+        }
+        if (matches.size() > 1) {
+            return OperationResult.error("Ambiguous world name. Be more specific: " + String.join(", ", matches));
+        }
+
+        String handle = matches.get(0);
+        try {
+            Path backupDir = backupDataFiles("remove-" + System.currentTimeMillis());
+            WorldStats removedStats = worldStats.remove(handle);
+            snapshotsByHandle.remove(handle);
+            advancementsByHandle.remove(handle);
+
+            long subtracted = 0L;
+            int keys = 0;
+            if (removedStats != null && removedStats.stats != null) {
+                for (Map.Entry<String, Long> e : removedStats.stats.entrySet()) {
+                    String key = e.getKey();
+                    long value = e.getValue() != null ? e.getValue() : 0L;
+                    if (value <= 0 || !isAdditiveStat(key)) {
+                        continue;
+                    }
+                    long current = totals.getOrDefault(key, 0L);
+                    long updated = Math.max(0L, current - value);
+                    if (updated == 0L) {
+                        totals.remove(key);
+                    } else {
+                        totals.put(key, updated);
+                    }
+                    subtracted += Math.min(current, value);
+                    keys++;
+                }
+            }
+
+            if (handle.equals(currentHandle)) {
+                currentHandle = "unknown";
+            }
+            saveTotals();
+            saveSnapshots();
+            saveAdvancements();
+            saveWorldStats();
+            return OperationResult.ok("Removed " + handle + ", subtracted " + subtracted
+                    + " across " + keys + " stat keys. Backup: " + backupDir.toAbsolutePath());
+        } catch (Exception e) {
+            System.out.println("[LifetimeStatTracker] Failed to remove world: " + e.getMessage());
+            return OperationResult.error("Remove failed. Check latest.log.");
+        }
+    }
 
     public String getCurrentHandle() {
         return currentHandle;
@@ -463,19 +604,17 @@ public class LifetimeStatsManager {
         return lastNonAdditiveUpdates;
     }
 
+    public int getLastHighWaterSkips() {
+        return lastHighWaterSkips;
+    }
+
     public String clearStoredDataWithBackup() {
         if (!initialized) {
             init();
         }
 
         try {
-            Files.createDirectories(getModDir());
-            Path backupDir = getModDir().resolve("backups").resolve("clear-" + System.currentTimeMillis());
-            Files.createDirectories(backupDir);
-            backupIfExists(getTotalsPath(), backupDir.resolve(TOTALS_FILE));
-            backupIfExists(getSnapshotsPath(), backupDir.resolve(SNAPSHOTS_FILE));
-            backupIfExists(getAdvancementsPath(), backupDir.resolve(ADVANCEMENTS_FILE));
-            backupIfExists(getWorldStatsPath(), backupDir.resolve(WORLD_STATS_FILE));
+            Path backupDir = backupDataFiles("clear-" + System.currentTimeMillis());
 
             totals.clear();
             snapshotsByHandle.clear();
@@ -488,6 +627,7 @@ public class LifetimeStatsManager {
             lastPositiveDeltaKeys = 0;
             lastAddedTotal = 0L;
             lastNonAdditiveUpdates = 0;
+            lastHighWaterSkips = 0;
 
             saveTotals();
             saveSnapshots();
@@ -554,7 +694,10 @@ public class LifetimeStatsManager {
         ServerData server = mc.getCurrentServer();
         if (server != null && server.ip != null && !server.ip.isBlank()) {
             if (serverWorldId == null || serverWorldId.isBlank()) {
-                return "unknown";
+                if (waitingForServerWorldIdentity && System.currentTimeMillis() < serverIdentityFallbackAtMs) {
+                    return "unknown";
+                }
+                return "server:" + sanitizeHandlePart(server.ip) + ":" + AGGREGATE_WORLD_ID;
             }
             return "server:" + server.ip + ":" + sanitizeHandlePart(serverWorldId);
         }
@@ -565,11 +708,18 @@ public class LifetimeStatsManager {
             try {
                 String levelName = integrated.getWorldData().getLevelName();
                 long seed = integrated.getWorldData().worldGenOptions().seed();
-                return "local:" + levelName + ":" + seed;
+                String stableId = integratedLevelId(integrated);
+                String handle = "local:" + sanitizeHandlePart(stableId != null ? stableId : levelName);
+                migrateLocalHandleAlias("local:" + levelName + ":" + seed, handle);
+                return handle;
             } catch (Throwable ignored) {
             }
         }
 
+        if (isValidHandle(lastKnownHandle) && disconnectGraceUntilMs > 0L
+                && System.currentTimeMillis() <= disconnectGraceUntilMs) {
+            return lastKnownHandle;
+        }
         return "unknown";
     }
 
@@ -579,6 +729,10 @@ public class LifetimeStatsManager {
         }
         if (handle.startsWith("server:")) {
             String serverHandle = handle.substring(7);
+            int manualIndex = serverHandle.indexOf(MANUAL_WORLD_MARKER);
+            if (manualIndex >= 0) {
+                return serverHandle.substring(manualIndex + MANUAL_WORLD_MARKER.length());
+            }
             int lastSeparator = serverHandle.lastIndexOf(':');
             return lastSeparator >= 0 && lastSeparator < serverHandle.length() - 1
                     ? serverHandle.substring(lastSeparator + 1)
@@ -594,6 +748,12 @@ public class LifetimeStatsManager {
         if (handle != null && handle.startsWith("server:")
                 && serverWorldDisplayName != null && !serverWorldDisplayName.isBlank()) {
             return serverWorldDisplayName;
+        }
+        if (isAggregateHandle(handle)) {
+            String serverName = currentServerName();
+            if (serverName != null) {
+                return serverName + " (aggregate)";
+            }
         }
         return extractDisplayName(handle);
     }
@@ -638,6 +798,201 @@ public class LifetimeStatsManager {
     // ─────────────────────────────────────────────────────────────
     // Disk I/O
     // ─────────────────────────────────────────────────────────────
+
+    private void applyPendingManualSeed(Map<String, Long> packetSnapshot) {
+        String handle = pendingManualSeedHandle;
+        String name = pendingManualSeedName;
+        pendingManualSeedHandle = null;
+        pendingManualSeedName = null;
+
+        if (handle == null || packetSnapshot.isEmpty()) {
+            return;
+        }
+
+        Map<String, Long> prevSnapshot = snapshotsByHandle.get(handle);
+        Map<String, Long> cumulativeSnapshot = prevSnapshot == null ? new HashMap<>() : new HashMap<>(prevSnapshot);
+        WorldStats ws = worldStats.computeIfAbsent(handle, h -> new WorldStats(name));
+        ws.displayName = name;
+        ws.lastSeen = System.currentTimeMillis();
+
+        long added = 0L;
+        int positives = 0;
+        for (Map.Entry<String, Long> e : packetSnapshot.entrySet()) {
+            String key = e.getKey();
+            long cur = e.getValue();
+            long prev = cumulativeSnapshot.getOrDefault(key, 0L);
+            if (!isAdditiveStat(key)) {
+                cumulativeSnapshot.put(key, cur);
+                continue;
+            }
+            if (cur > prev) {
+                long delta = cur - prev;
+                cumulativeSnapshot.put(key, cur);
+                totals.merge(key, delta, Long::sum);
+                ws.stats.merge(key, delta, Long::sum);
+                added += delta;
+                positives++;
+            }
+        }
+
+        snapshotsByHandle.put(handle, cumulativeSnapshot);
+        System.out.println("[LifetimeStatTracker] Manual seed applied handle=" + handle
+                + " positives=" + positives + " added=" + added);
+    }
+
+    private List<String> findMatchingWorldHandles(String query) {
+        String normalized = query.toLowerCase(Locale.ROOT);
+        List<String> exact = new ArrayList<>();
+        List<String> partial = new ArrayList<>();
+        for (Map.Entry<String, WorldStats> e : worldStats.entrySet()) {
+            String handle = e.getKey();
+            String display = getWorldDisplayName(handle, e.getValue());
+            String handleLower = handle.toLowerCase(Locale.ROOT);
+            String displayLower = display.toLowerCase(Locale.ROOT);
+            if (handleLower.equals(normalized) || displayLower.equals(normalized)) {
+                exact.add(handle);
+            } else if (handleLower.contains(normalized) || displayLower.contains(normalized)) {
+                partial.add(handle);
+            }
+        }
+        return !exact.isEmpty() ? exact : partial;
+    }
+
+    private Path backupDataFiles(String name) throws java.io.IOException {
+        Files.createDirectories(getModDir());
+        Path backupDir = getModDir().resolve("backups").resolve(name);
+        Files.createDirectories(backupDir);
+        backupIfExists(getTotalsPath(), backupDir.resolve(TOTALS_FILE));
+        backupIfExists(getSnapshotsPath(), backupDir.resolve(SNAPSHOTS_FILE));
+        backupIfExists(getAdvancementsPath(), backupDir.resolve(ADVANCEMENTS_FILE));
+        backupIfExists(getWorldStatsPath(), backupDir.resolve(WORLD_STATS_FILE));
+        return backupDir;
+    }
+
+    private static boolean usesHighWaterSnapshots(String handle) {
+        return isAggregateHandle(handle) || isManualSeedHandle(handle);
+    }
+
+    private static boolean isAggregateHandle(String handle) {
+        return handle != null && handle.startsWith("server:") && handle.endsWith(":" + AGGREGATE_WORLD_ID);
+    }
+
+    private static boolean isManualSeedHandle(String handle) {
+        return handle != null && handle.startsWith("server:") && handle.contains(MANUAL_WORLD_MARKER);
+    }
+
+    private static String manualHandleForAggregate(String aggregateHandle, String name) {
+        String base = aggregateHandle.substring(0, aggregateHandle.length() - AGGREGATE_WORLD_ID.length());
+        return base + "manual:" + sanitizeHandlePart(name);
+    }
+
+    private String currentServerName() {
+        try {
+            ServerData server = Minecraft.getInstance().getCurrentServer();
+            if (server != null && server.name != null && !server.name.isBlank()) {
+                return server.name;
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static String integratedLevelId(MinecraftServer server) {
+        try {
+            java.lang.reflect.Field storageSourceField = MinecraftServer.class.getDeclaredField("storageSource");
+            storageSourceField.setAccessible(true);
+            Object storageSource = storageSourceField.get(server);
+            Object levelId = storageSource.getClass().getMethod("getLevelId").invoke(storageSource);
+            if (levelId instanceof String id && !id.isBlank()) {
+                return id;
+            }
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            Path serverDir = server.getServerDirectory();
+            Path fileName = serverDir.getFileName();
+            if (fileName != null) {
+                String id = fileName.toString();
+                if (!id.isBlank()) {
+                    return id;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private void migrateLocalHandleAlias(String oldHandle, String newHandle) {
+        if (oldHandle == null || oldHandle.equals(newHandle) || snapshotsByHandle.containsKey(newHandle)) {
+            return;
+        }
+        if (!snapshotsByHandle.containsKey(oldHandle) && !worldStats.containsKey(oldHandle)
+                && !advancementsByHandle.containsKey(oldHandle)) {
+            return;
+        }
+
+        Map<String, Long> snapshot = snapshotsByHandle.remove(oldHandle);
+        if (snapshot != null) {
+            snapshotsByHandle.put(newHandle, snapshot);
+            saveSnapshots();
+        }
+        WorldStats stats = worldStats.remove(oldHandle);
+        if (stats != null) {
+            worldStats.put(newHandle, stats);
+            saveWorldStats();
+        }
+        Set<String> advancements = advancementsByHandle.remove(oldHandle);
+        if (advancements != null) {
+            advancementsByHandle.put(newHandle, advancements);
+            saveAdvancements();
+        }
+        System.out.println("[LifetimeStatTracker] Migrated local handle " + oldHandle + " -> " + newHandle);
+    }
+
+    private void reconcilePreIdentityAggregate(String moddedHandle) {
+        String aggregateHandle = preIdentityAggregateHandle;
+        boolean aggregateCreated = preIdentityAggregateCreated;
+        preIdentityAggregateHandle = null;
+        preIdentityAggregateCreated = false;
+
+        if (!isValidHandle(moddedHandle) || aggregateHandle == null || moddedHandle.equals(aggregateHandle)
+                || snapshotsByHandle.containsKey(moddedHandle)) {
+            return;
+        }
+
+        Map<String, Long> aggregateSnapshot = snapshotsByHandle.get(aggregateHandle);
+        if (aggregateSnapshot == null) {
+            return;
+        }
+
+        if (aggregateCreated) {
+            Map<String, Long> snapshot = snapshotsByHandle.remove(aggregateHandle);
+            if (snapshot != null) {
+                snapshotsByHandle.put(moddedHandle, snapshot);
+            }
+            WorldStats stats = worldStats.remove(aggregateHandle);
+            if (stats != null) {
+                stats.displayName = displayNameForHandle(moddedHandle);
+                worldStats.put(moddedHandle, stats);
+            }
+            Set<String> advancements = advancementsByHandle.remove(aggregateHandle);
+            if (advancements != null) {
+                advancementsByHandle.put(moddedHandle, advancements);
+            }
+            System.out.println("[LifetimeStatTracker] Promoted pre-identity aggregate handle "
+                    + aggregateHandle + " -> " + moddedHandle);
+        } else {
+            snapshotsByHandle.put(moddedHandle, new HashMap<>(aggregateSnapshot));
+            worldStats.put(moddedHandle, new WorldStats(displayNameForHandle(moddedHandle)));
+            System.out.println("[LifetimeStatTracker] Seeded modded handle snapshot from pre-identity aggregate "
+                    + aggregateHandle + " -> " + moddedHandle);
+        }
+
+        saveSnapshots();
+        saveAdvancements();
+        saveWorldStats();
+    }
 
     public Path getModDir() {
         Path configDir = FabricLoader.getInstance().getConfigDir();
@@ -802,6 +1157,7 @@ public class LifetimeStatsManager {
     }
 
     private void repairLoadedData() {
+        boolean totalsChanged = removeNonAdditiveStats(totals);
         boolean worldStatsChanged = false;
         for (String handle : snapshotsByHandle.keySet()) {
             boolean missingWorldStats = !worldStats.containsKey(handle);
@@ -810,6 +1166,7 @@ public class LifetimeStatsManager {
                 created.stats.putAll(snapshotsByHandle.getOrDefault(h, Collections.emptyMap()));
                 return created;
             });
+            worldStatsChanged |= removeNonAdditiveStats(stats.stats);
             worldStatsChanged |= missingWorldStats || sanitizeWorldStats(handle, stats);
         }
 
@@ -833,9 +1190,23 @@ public class LifetimeStatsManager {
         if (worldStatsChanged) {
             saveWorldStats();
         }
+        if (totalsChanged) {
+            saveTotals();
+        }
         if (advancementsChanged) {
             saveAdvancements();
         }
+    }
+
+    private static boolean removeNonAdditiveStats(Map<String, Long> stats) {
+        if (stats == null) {
+            return false;
+        }
+        boolean changed = false;
+        for (String key : NON_ADDITIVE_STATS) {
+            changed |= stats.remove(key) != null;
+        }
+        return changed;
     }
 
     private boolean sanitizeWorldStats(String handle, WorldStats stats) {
@@ -872,5 +1243,23 @@ public class LifetimeStatsManager {
                 && !handle.isBlank()
                 && !handle.equals("unknown")
                 && !handle.contains("ResourceKey[");
+    }
+
+    public static class OperationResult {
+        public final boolean success;
+        public final String message;
+
+        private OperationResult(boolean success, String message) {
+            this.success = success;
+            this.message = message;
+        }
+
+        public static OperationResult ok(String message) {
+            return new OperationResult(true, message);
+        }
+
+        public static OperationResult error(String message) {
+            return new OperationResult(false, message);
+        }
     }
 }
