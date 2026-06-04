@@ -29,3 +29,7 @@ pluginManagement {
 }
 
 rootProject.name = 'lifetime-stat-tracker'
+
+include 'smokelaunch'
+
+project(':smokelaunch').projectDir = file('modules/smokelaunch')

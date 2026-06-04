@@ -174,12 +174,21 @@ def candidateMinecraftVersionProfiles = listProperty(
 		''
 )
 def validationMinecraftVersionProfiles = (supportedMinecraftVersionProfiles + candidateMinecraftVersionProfiles).unique()
+def smokeTestRequiredMinecraftVersionProfiles = listProperty(
+		'smoke_test_required_minecraft_version_profiles',
+		supportedMinecraftVersionProfiles.join(',')
+)
 def releaseOutputDirectory = layout.buildDirectory.dir("release/${minecraft_version_profile_id}")
 def releaseJarTaskProvider = tasks.named(release_jar_task_name)
 def releaseJarFile = releaseJarTaskProvider.flatMap { it.archiveFile }
 def gradleWrapperExecutable = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')
 		? 'gradlew.bat'
 		: './gradlew'
+def useSmokeTestXvfb = (findProperty('lifetimestattracker_smoke_xvfb') ?: 'false').toString().toBoolean()
+def useSmokeTestNestedNoDaemon = (findProperty('lifetimestattracker_smoke_nested_no_daemon') ?: 'true').toString().toBoolean()
+def selectedSmokeProfileFilters = listProperty('lifetimestattracker_smoke_profiles', '') as Set
+def selectedSmokeGameVersionFilters = listProperty('lifetimestattracker_smoke_game_versions', '') as Set
+def selectedSmokeInstallSetFilters = listProperty('lifetimestattracker_smoke_install_sets', '') as Set
 
 def loadVersionProfile = { String profileName ->
 	def profileFile = file("gradle/version-profiles/${profileName}.properties")
@@ -189,6 +198,20 @@ def loadVersionProfile = { String profileName ->
 	def profile = new Properties()
 	profileFile.withInputStream { profile.load(it) }
 	return profile
+}
+
+def profileIdFor = { String profileName, Properties profile ->
+	def value = profile.getProperty('profile_id')
+	return value != null && !value.isBlank() ? value.trim() : profileName
+}
+
+def profileGameVersionsFor = { Properties profile ->
+	def selectedVersion = profile.getProperty('minecraft_version')
+	def value = profile.getProperty('modrinth_game_versions') ?: selectedVersion
+	return value.toString()
+			.split(',')
+			.collect { it.trim() }
+			.findAll { !it.isEmpty() }
 }
 
 def safeTaskSuffix = { String value ->
@@ -411,6 +434,253 @@ tasks.register('listVersionProfiles') {
 			println "  - ${profileName}: profile_id=${profile.getProperty('profile_id', profileName)}, compat_group=${profile.getProperty('compat_group', profileName)}, minecraft=${profile.getProperty('minecraft_version')}"
 		}
 	}
+}
+
+tasks.register('verifySmokeTestMatrix') {
+	group = 'verification'
+	description = 'Verifies supported profiles have passing smoke-test records and candidate profiles are tracked.'
+
+	doLast {
+		def smokeFile = file('gradle/smoke-tests.json')
+		if (!smokeFile.isFile()) {
+			throw new GradleException("Missing smoke-test matrix: ${smokeFile}")
+		}
+
+		def smokeMatrix = new groovy.json.JsonSlurper().parse(smokeFile)
+		if (smokeMatrix.schema_version != 1) {
+			throw new GradleException("Unsupported smoke-test matrix schema: ${smokeMatrix.schema_version}")
+		}
+		def profilesNode = smokeMatrix.profiles ?: [:]
+		def validStatuses = ['pass', 'pending', 'fail'] as Set
+
+		smokeTestRequiredMinecraftVersionProfiles.each { profileName ->
+			def profile = loadVersionProfile(profileName)
+			def profileId = profileIdFor(profileName, profile)
+			def smokeProfile = profilesNode[profileId]
+			if (!smokeProfile) {
+				throw new GradleException("Smoke-test matrix is missing required profile '${profileId}'.")
+			}
+
+			profileGameVersionsFor(profile).each { gameVersion ->
+				def result = smokeProfile.game_versions ? smokeProfile.game_versions[gameVersion] : null
+				if (!result) {
+					throw new GradleException("Smoke-test matrix is missing required ${profileId} / ${gameVersion}.")
+				}
+				if (!validStatuses.contains(result.status)) {
+					throw new GradleException("Smoke-test matrix has invalid status '${result.status}' for ${profileId} / ${gameVersion}.")
+				}
+				if (result.status != 'pass') {
+					throw new GradleException("Supported profile '${profileId}' cannot publish ${gameVersion}; smoke status is '${result.status}'.")
+				}
+				if (!result.tested_at || !result.method) {
+					throw new GradleException("Passing smoke record for ${profileId} / ${gameVersion} must include tested_at and method.")
+				}
+			}
+		}
+
+		candidateMinecraftVersionProfiles.each { profileName ->
+			def profile = loadVersionProfile(profileName)
+			def profileId = profileIdFor(profileName, profile)
+			def smokeProfile = profilesNode[profileId]
+			if (!smokeProfile) {
+				throw new GradleException("Smoke-test matrix is missing candidate profile '${profileId}'. Add pending records before CI validation.")
+			}
+
+			profileGameVersionsFor(profile).each { gameVersion ->
+				def result = smokeProfile.game_versions ? smokeProfile.game_versions[gameVersion] : null
+				if (!result) {
+					throw new GradleException("Smoke-test matrix is missing candidate ${profileId} / ${gameVersion}. Add a pending/pass/fail record.")
+				}
+				if (!validStatuses.contains(result.status)) {
+					throw new GradleException("Smoke-test matrix has invalid status '${result.status}' for ${profileId} / ${gameVersion}.")
+				}
+				if (result.status == 'pass' && (!result.tested_at || !result.method)) {
+					throw new GradleException("Passing smoke record for ${profileId} / ${gameVersion} must include tested_at and method.")
+				}
+				if (result.status != 'pass') {
+					println "Candidate profile '${profileId}' for Minecraft ${gameVersion} is tracked as '${result.status}' and remains non-publishable."
+				}
+			}
+		}
+	}
+}
+
+def smokeInstallSets = [
+		[
+				id         : 'lifetime-stat-tracker-client-only',
+				taskSuffix : 'ClientOnly',
+				description: 'Lifetime Stat Tracker client jar only'
+		]
+]
+
+def selectedSmokeFiltersConfigured = !selectedSmokeProfileFilters.isEmpty()
+		|| !selectedSmokeGameVersionFilters.isEmpty()
+		|| !selectedSmokeInstallSetFilters.isEmpty()
+
+def filteredSmokeProfiles = { List<String> profiles ->
+	if (selectedSmokeProfileFilters.isEmpty()) {
+		return profiles
+	}
+	return profiles.findAll { profileName ->
+		def profile = loadVersionProfile(profileName)
+		def profileId = profileIdFor(profileName, profile)
+		selectedSmokeProfileFilters.contains(profileName) || selectedSmokeProfileFilters.contains(profileId)
+	}
+}
+
+def filteredSmokeGameVersions = { Properties profile ->
+	def gameVersions = profileGameVersionsFor(profile)
+	if (selectedSmokeGameVersionFilters.isEmpty()) {
+		return gameVersions
+	}
+	return gameVersions.findAll { selectedSmokeGameVersionFilters.contains(it) }
+}
+
+def filteredSmokeInstallSets = {
+	if (selectedSmokeInstallSetFilters.isEmpty()) {
+		return smokeInstallSets
+	}
+	return smokeInstallSets.findAll {
+		selectedSmokeInstallSetFilters.contains(it.id) || selectedSmokeInstallSetFilters.contains(it.taskSuffix)
+	}
+}
+
+def registerSmokeTasks = { List<String> profiles, String taskPrefix, String buildTaskPrefix, boolean applySelectionFilters ->
+	def smokeTasks = []
+	def previousSmokeTask = null
+	def profilesForSmoke = applySelectionFilters ? filteredSmokeProfiles(profiles) : profiles
+	def installSetsForSmoke = applySelectionFilters ? filteredSmokeInstallSets() : smokeInstallSets
+
+	profilesForSmoke.each { profileName ->
+		def profile = loadVersionProfile(profileName)
+		def profileId = profileIdFor(profileName, profile)
+		def releaseJarDirectory = layout.buildDirectory.dir("release/${profileId}")
+		def buildTaskName = profileBuildTaskName(buildTaskPrefix, profileName)
+		def gameVersionsForSmoke = applySelectionFilters ? filteredSmokeGameVersions(profile) : profileGameVersionsFor(profile)
+
+		gameVersionsForSmoke.each { gameVersion ->
+			installSetsForSmoke.each { installSet ->
+				def taskName = "${taskPrefix}${safeTaskSuffix(profileName)}On${safeTaskSuffix(gameVersion)}${installSet.taskSuffix}"
+				def modListFile = layout.buildDirectory.file("smoke-mod-lists/${profileId}/${gameVersion}/${installSet.id}.txt")
+				def runArguments = [
+						gradleWrapperExecutable,
+						':smokelaunch:runClient',
+						"-Pminecraft_version_profile=${gameVersion}",
+						'-Plifetimestattracker_smoke_test=true',
+						"-Plifetimestattracker_smoke_release_profile=${profileId}",
+						"-Plifetimestattracker_smoke_install_set=${installSet.id}",
+						"-Plifetimestattracker_smoke_mods=@${modListFile.get().asFile.absolutePath}"
+				]
+				if (useSmokeTestNestedNoDaemon) {
+					runArguments.add('--no-daemon')
+				}
+				runArguments.add('--console=plain')
+
+				def smokeTask = tasks.register(taskName, Exec) {
+					group = 'verification'
+					description = "Launches Minecraft ${gameVersion} with ${installSet.description} from profile ${profileId}."
+					dependsOn tasks.named(buildTaskName)
+
+					if (useSmokeTestXvfb) {
+						commandLine((['xvfb-run', '-a'] + runArguments) as String[])
+					} else {
+						commandLine(runArguments as String[])
+					}
+
+					doFirst {
+						def releaseDir = releaseJarDirectory.get().asFile
+						def releaseJar = new File(releaseDir, "${project.base.archivesName.get()}-${version}.jar")
+						if (!releaseJar.isFile()) {
+							throw new GradleException("Smoke test ${taskName} is missing release jar: ${releaseJar}")
+						}
+
+						def modList = modListFile.get().asFile
+						modList.parentFile.mkdirs()
+						modList.text = releaseJar.absolutePath + System.lineSeparator()
+					}
+				}
+
+				if (previousSmokeTask != null) {
+					def predecessor = previousSmokeTask
+					smokeTask.configure {
+						mustRunAfter predecessor
+					}
+				}
+				previousSmokeTask = smokeTask
+				smokeTasks.add(smokeTask)
+			}
+		}
+	}
+
+	return smokeTasks
+}
+
+def supportedSmokeTasks = registerSmokeTasks(
+		supportedMinecraftVersionProfiles,
+		'smokeSupportedMinecraft',
+		'buildMinecraft',
+		false
+)
+
+def validationSmokeTasks = registerSmokeTasks(
+		validationMinecraftVersionProfiles,
+		'smokeValidationMinecraft',
+		'validateMinecraft',
+		false
+)
+
+def selectedSmokeTasks = registerSmokeTasks(
+		validationMinecraftVersionProfiles,
+		'smokeSelectedMinecraft',
+		'validateMinecraft',
+		true
+)
+
+tasks.register('smokeTestValidationClients') {
+	group = 'verification'
+	description = 'Launches exact Minecraft runtimes with the packaged release jar for each validation profile/game version.'
+	dependsOn validationSmokeTasks
+}
+
+tasks.register('smokeTestSupportedClients') {
+	group = 'verification'
+	description = 'Launches exact Minecraft runtimes with the packaged release jar for supported profiles only.'
+	dependsOn supportedSmokeTasks
+}
+
+tasks.register('smokeTestSelectedClients') {
+	group = 'verification'
+	description = 'Launches a filtered subset of client smoke tests selected by lifetimestattracker_smoke_* properties.'
+	dependsOn selectedSmokeTasks
+
+	doFirst {
+		if (!selectedSmokeFiltersConfigured) {
+			throw new GradleException("Set at least one of -Plifetimestattracker_smoke_profiles, -Plifetimestattracker_smoke_game_versions, or -Plifetimestattracker_smoke_install_sets before running smokeTestSelectedClients.")
+		}
+		if (selectedSmokeTasks.isEmpty()) {
+			throw new GradleException("Selected smoke filters did not match any profile/game version/install set.")
+		}
+	}
+}
+
+tasks.register('ciValidation') {
+	group = 'verification'
+	description = 'Runs CI validation across supported and candidate version profiles.'
+	dependsOn tasks.named('buildValidationVersions')
+	dependsOn tasks.named('smokeTestValidationClients')
+	dependsOn tasks.named('verifySmokeTestMatrix')
+}
+
+tasks.register('publishValidation') {
+	group = 'verification'
+	description = 'Builds and smoke-tests supported profiles only before Modrinth publishing.'
+	dependsOn tasks.named('buildAllVersions')
+	dependsOn tasks.named('smokeTestSupportedClients')
+	dependsOn tasks.named('verifySmokeTestMatrix')
+}
+
+tasks.named('check') {
+	dependsOn tasks.named('verifySmokeTestMatrix')
 }
 
 publishing {

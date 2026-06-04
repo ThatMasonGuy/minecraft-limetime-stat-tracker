@@ -1,0 +1,80 @@
+apply plugin: rootProject.loom_plugin_id
+
+base {
+	archivesName = 'lifetime-stat-tracker-smoke-launcher'
+}
+
+loom {
+	splitEnvironmentSourceSets()
+}
+
+sourceSets {
+	main {
+		java.setSrcDirs([])
+		resources.setSrcDirs([])
+	}
+	client {
+		java.setSrcDirs([])
+		resources.setSrcDirs([])
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+	if (!rootProject.unobfuscated_minecraft) {
+		mappings loom.officialMojangMappings()
+	}
+	add(rootProject.fabric_dependency_configuration, "net.fabricmc:fabric-loader:${rootProject.loader_version}")
+	add(rootProject.fabric_dependency_configuration, "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}")
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = rootProject.target_java_version
+}
+
+tasks.withType(JavaExec).configureEach {
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(rootProject.target_java_version)
+	}
+	jvmArgs('-Xmx2G')
+
+	def smokeMods = rootProject.findProperty('lifetimestattracker_smoke_mods')
+	if (smokeMods != null && !smokeMods.toString().isBlank()) {
+		jvmArgs("-Dfabric.addMods=${smokeMods}")
+	}
+
+	if ((rootProject.findProperty('lifetimestattracker_smoke_test') ?: 'false').toString().toBoolean()) {
+		jvmArgs('-Dlifetimestattracker.smokeTest=true')
+		jvmArgs("-Dlifetimestattracker.smokeMinecraftProfile=${rootProject.minecraft_version_profile}")
+		jvmArgs("-Dlifetimestattracker.smokeGameVersion=${rootProject.minecraft_version}")
+
+		def smokeReleaseProfile = rootProject.findProperty('lifetimestattracker_smoke_release_profile')
+		if (smokeReleaseProfile != null && !smokeReleaseProfile.toString().isBlank()) {
+			jvmArgs("-Dlifetimestattracker.smokeReleaseProfile=${smokeReleaseProfile}")
+		}
+
+		def smokeInstallSet = rootProject.findProperty('lifetimestattracker_smoke_install_set')
+		if (smokeInstallSet != null && !smokeInstallSet.toString().isBlank()) {
+			jvmArgs("-Dlifetimestattracker.smokeInstallSet=${smokeInstallSet}")
+		}
+
+		args('--width', '854', '--height', '480')
+		def smokeRunId = smokeInstallSet != null && !smokeInstallSet.toString().isBlank()
+				? smokeInstallSet.toString()
+				: 'default'
+		def smokeWorkingDir = rootProject.layout.buildDirectory.dir("smoke-run/${rootProject.minecraft_version_profile}/${project.name}/${smokeRunId}").get().asFile
+		workingDir smokeWorkingDir
+		doFirst {
+			smokeWorkingDir.mkdirs()
+			workingDir smokeWorkingDir
+		}
+	}
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(rootProject.target_java_version)
+	}
+	sourceCompatibility = JavaVersion.toVersion(rootProject.target_java_version)
+	targetCompatibility = JavaVersion.toVersion(rootProject.target_java_version)
+}

@@ -30,6 +30,7 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
         NetworkPayloadCompat.registerPayloads();
         ClientNetworkPayloadCompat.registerClientReceivers();
         LifetimeStatsManager.get().init();
+        LifetimeStatTrackerSmokeTest.registerIfEnabled();
 
         // Register commands
         ClientCommandRegistrationCallback.EVENT.register(this::registerCommands);

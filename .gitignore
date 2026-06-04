@@ -4,6 +4,9 @@
 build/
 out/
 classes/
+modules/*/.gradle/
+modules/*/build/
+modules/*/run/
 
 # eclipse
 
