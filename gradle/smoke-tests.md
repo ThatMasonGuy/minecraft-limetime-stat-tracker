@@ -37,7 +37,10 @@ cleanly.
 
 Dedicated server smoke coverage is not backfilled into the historical matrix
 yet. It is a live Gradle gate: `ciValidation` and `publishValidation` now run
-the server launch tasks as well as the client launch tasks.
+the server launch tasks as well as the client launch tasks. GitHub Actions
+Modrinth publish run `26943407860` proved this gate for release `2.7.1`,
+passing both client and dedicated-server smoke launches for every exact
+Minecraft runtime published by the four supported compatibility-group profiles.
 
 There are currently no candidate release profiles. New candidates should be
 tracked in `gradle/smoke-tests.json` as `pending` until every exact Minecraft

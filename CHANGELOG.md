@@ -140,6 +140,16 @@ All notable project changes will be documented here.
 - Bumped the Modrinth publish version to `2.7.1` and added release notes for a
   validation refresh that publishes every compatibility-group jar after the new
   dedicated-server smoke gate.
+- Published the validated `2.7.1+mc...` compatibility-group Modrinth versions
+  through GitHub Actions run `26943407860`, after every exact supported runtime
+  passed both client and dedicated-server packaged-jar smoke launches:
+  - `2.7.1+mc1.20-1.20.4` as Modrinth version `qYHIQ8Sd`.
+  - `2.7.1+mc1.20.5-1.21.10` as Modrinth version `n6br1EMY`.
+  - `2.7.1+mc1.21.11` as Modrinth version `zgxySlhY`.
+  - `2.7.1+mc26.1-26.2-pre-3` as Modrinth version `b0rtBSzi`.
+- Created annotated tag `v2.7.1` and GitHub Release
+  `Lifetime Stat Tracker 2.7.1` at publish source commit
+  `ea929a91e23fdaafbbeea19733a3136ad1a06b10`.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.

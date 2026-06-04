@@ -1,15 +1,13 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: GitHub Actions published `2.7.0` for supported `1.21.11` to
-Modrinth version `s24DbwkA`, then published the promoted compatibility-group
-release entries for Minecraft `1.20` through `26.2-pre-3`. The repo now tracks
-source-of-truth Modrinth project page copy, and the live page has been updated
-from that source with API readback verification. The `v2.7.0` Git tag and
-GitHub Release have been backfilled to point at the all-profile publish commit.
-The smoke pipeline now includes dedicated-server launch coverage for the
-optional server component. The repo is preparing a `2.7.1` validation-refresh
-publish so every live Modrinth file can be backed by the upgraded server smoke
-gate.
+Current checkpoint: GitHub Actions has published `2.7.1` for every supported
+compatibility-group profile from Minecraft `1.20` through `26.2-pre-3`.
+Workflow run `26943407860` passed both client and dedicated-server packaged-jar
+smoke launches for every exact runtime listed by the four supported profiles
+before upload. The release is live on Modrinth as version ids `qYHIQ8Sd`,
+`n6br1EMY`, `zgxySlhY`, and `b0rtBSzi`. Annotated Git tag `v2.7.1` and the
+matching GitHub Release point at publish source commit
+`ea929a91e23fdaafbbeea19733a3136ad1a06b10`.
 
 ## Project Workflow
 
@@ -235,13 +233,21 @@ gate.
      run printed `LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS`.
    - Remaining future hardening: add a true client-to-dedicated-server handshake
      smoke if we decide the heavier local two-process test is worth the runtime.
-15. `2.7.1` validation-refresh release prep:
+15. `2.7.1` validation-refresh release:
    - Bumped `mod_version` to `2.7.1`.
    - Added `gradle/release-notes/2.7.1.md`, focused on the upgraded
      dedicated-server release validation rather than code or data changes.
-   - Next step: run the guarded live Modrinth publish workflow for every
-     supported profile, then tag `v2.7.1` and create the matching GitHub Release
-     from the successful publish commit.
+   - Ran guarded live Modrinth publish workflow `26943407860` from commit
+     `ea929a91e23fdaafbbeea19733a3136ad1a06b10`.
+   - The workflow passed client and dedicated-server smoke launches for every
+     exact runtime listed by the supported profiles before upload.
+   - Published the compatibility-group Modrinth versions:
+     - `2.7.1+mc1.20-1.20.4` as Modrinth version `qYHIQ8Sd`.
+     - `2.7.1+mc1.20.5-1.21.10` as Modrinth version `n6br1EMY`.
+     - `2.7.1+mc1.21.11` as Modrinth version `zgxySlhY`.
+     - `2.7.1+mc26.1-26.2-pre-3` as Modrinth version `b0rtBSzi`.
+   - Created annotated tag `v2.7.1` and GitHub Release
+     `Lifetime Stat Tracker 2.7.1`, both pointing at the publish source commit.
 
 ## Current Compatibility Conclusion
 
@@ -398,9 +404,9 @@ every exact Minecraft version listed in `modrinth_game_versions`.
      smoke testing pass.
    - Promote only smoke-passed groups into `supported_minecraft_version_profiles`.
    - Run the guarded publish workflow when release approval is given.
-   - Current status: first supported `1.21.11` guarded publish is complete, all
-     four release profiles are promoted, and the guarded all-profile Modrinth
-     publish workflow has uploaded the `2.7.0+mc...` compatibility entries.
+   - Current status: all four release profiles are promoted, and the guarded
+     all-profile Modrinth publish workflow has uploaded the `2.7.1+mc...`
+     compatibility entries after client and dedicated-server smoke validation.
 
 ## Compatibility Risk Surfaces
 
