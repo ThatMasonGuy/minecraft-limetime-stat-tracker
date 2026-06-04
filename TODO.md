@@ -1,7 +1,7 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: Compatibility adapters implemented; compile validation is
-green for the supported profile and current candidates
+Current checkpoint: Release artifact collection and metadata verification are
+implemented for supported and candidate profile builds
 
 ## Project Workflow
 
@@ -96,6 +96,18 @@ green for the supported profile and current candidates
    - Verified `.\gradlew.bat buildValidationVersions --no-daemon --console=plain`
      across `1.21.11`, `1.20-1.20.4`, `1.20.5-1.21.10`, and
      `26.1-26.2-pre-3`.
+5. Release artifact collection and metadata verification:
+   - Added `buildRelease`, `collectReleaseJar`, and `verifyReleaseMetadata`.
+   - Profile matrix tasks now call `buildRelease`, so release jars are collected
+     under `build/release/<profile_id>/` during supported and validation builds.
+   - Metadata verification reads the packaged jar and checks expanded
+     `fabric.mod.json`, Mixin compatibility level, mod id, version, Minecraft
+     and Java dependencies, Fabric API dependency, icon path, and required
+     client mixins.
+   - Recorded Modrinth project id `rJCvFZKh`; publishing should use the
+     repository secret `MODRINTH_TOKEN`.
+   - Verified `.\gradlew.bat buildRelease --no-daemon --console=plain` and
+     `.\gradlew.bat buildValidationVersions --no-daemon --console=plain`.
 
 ## Current Compatibility Conclusion
 
@@ -152,7 +164,9 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Decide whether to clean up mojibake/non-ASCII chat glyphs in command output
      before or after compatibility work.
    - Confirm the current license and Modrinth/project metadata.
-   - Current status: build verified; cleanup/metadata review still TODO.
+   - Current status: build verified and Modrinth project id recorded. License
+     metadata needs a user decision before publishing because `fabric.mod.json`
+     and `README.md` say MIT while `LICENSE` is CC0 1.0. Cleanup still TODO.
 2. Version-profile foundation:
    - Add `gradle/version-profiles/*.properties`.
    - Add default, supported, and candidate profile properties.
@@ -171,8 +185,8 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Collect release jars under `build/release/<profile_id>/`.
    - Add metadata verification for mod id, version, Minecraft dependency, Java
      dependency, icon path, and Mixin compatibility level.
-   - Current status: profile-aware build tasks done; release collection and
-     metadata verification TODO.
+   - Current status: DONE for compile-level release jars. Runtime smoke gates
+     and license decision still block publish promotion.
 4. Compile probe matrix:
    - Probe exact runtimes first, using the Inventory Sort version metadata as a
      starting point.
@@ -223,7 +237,8 @@ every exact Minecraft version listed in `modrinth_game_versions`.
      and smoke records exist.
    - Publish supported profiles only.
    - Use `gradle/release-notes/<mod_version>.md` for Modrinth changelogs.
-   - Current status: TODO.
+   - Current status: project id `rJCvFZKh` is recorded and GitHub repository
+     secret `MODRINTH_TOKEN` is expected; publish/dry-run tasks still TODO.
 10. Release promotion:
    - Keep new groups in `candidate_minecraft_version_profiles` until compile and
      smoke testing pass.

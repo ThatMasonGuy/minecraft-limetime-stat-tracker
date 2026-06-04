@@ -46,6 +46,15 @@ All notable project changes will be documented here.
   and Java 25 profiles can compile in one validation matrix.
 - Verified `buildValidationVersions` across supported `1.21.11` and candidate
   profiles `1.20-1.20.4`, `1.20.5-1.21.10`, and `26.1-26.2-pre-3`.
+- Added release artifact collection and metadata verification:
+  - `buildRelease` builds, collects, and verifies the active profile jar.
+  - `buildAllVersions` and `buildValidationVersions` now collect release jars
+    under `build/release/<profile_id>/`.
+  - Packaged jar metadata checks cover expanded Minecraft/Java dependencies,
+    Mixin compatibility level, icon path, mod id, version, Fabric API
+    dependency, and required client mixins.
+- Recorded Modrinth project id `rJCvFZKh` and documented the expected
+  `MODRINTH_TOKEN` repository secret for future publishing automation.
 - Replaced flat Minecraft/Fabric dependency properties with
   `minecraft_version_profile`, `supported_minecraft_version_profiles`, and
   `candidate_minecraft_version_profiles`.

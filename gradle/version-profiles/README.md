@@ -70,14 +70,16 @@ Current profile-foundation commands:
 .\gradlew.bat printVersionProfile
 .\gradlew.bat listVersionProfiles
 .\gradlew.bat build "-Pminecraft_version_profile=1.21.11"
+.\gradlew.bat buildRelease
 .\gradlew.bat buildAllVersions
 .\gradlew.bat buildValidationVersions
 ```
 
-`buildAllVersions` builds only profiles listed in
-`supported_minecraft_version_profiles`, which is currently just `1.21.11`.
-`buildValidationVersions` includes candidates and currently passes for the
-initial four-profile compile matrix.
+`buildRelease` builds the active profile, collects the release jar under
+`build/release/<profile_id>/`, and verifies packaged metadata. `buildAllVersions`
+builds only profiles listed in `supported_minecraft_version_profiles`, which is
+currently just `1.21.11`. `buildValidationVersions` includes candidates and
+currently passes for the initial four-profile compile matrix.
 
 Baseline command:
 

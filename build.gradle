@@ -172,6 +172,8 @@ def candidateMinecraftVersionProfiles = listProperty(
 )
 def validationMinecraftVersionProfiles = (supportedMinecraftVersionProfiles + candidateMinecraftVersionProfiles).unique()
 def releaseOutputDirectory = layout.buildDirectory.dir("release/${minecraft_version_profile_id}")
+def releaseJarTaskProvider = tasks.named(release_jar_task_name)
+def releaseJarFile = releaseJarTaskProvider.flatMap { it.archiveFile }
 def gradleWrapperExecutable = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')
 		? 'gradlew.bat'
 		: './gradlew'
@@ -202,7 +204,7 @@ def registerProfileBuildTasks = { List<String> profiles, String taskPrefix, Stri
 			group = taskGroup
 			description = "${descriptionPrefix} ${profile}."
 			commandLine gradleWrapperExecutable,
-					'build',
+					'buildRelease',
 					"-Pminecraft_version_profile=${profile}",
 					'--no-daemon',
 					'--console=plain'
@@ -222,15 +224,123 @@ def supportedProfileBuildTasks = registerProfileBuildTasks(
 		supportedMinecraftVersionProfiles,
 		'buildMinecraft',
 		'build',
-		'Builds the mod jar for supported Minecraft version profile'
+		'Builds and verifies the release jar for supported Minecraft version profile'
 )
 
 def validationProfileBuildTasks = registerProfileBuildTasks(
 		validationMinecraftVersionProfiles,
 		'validateMinecraft',
 		'verification',
-		'Builds the mod jar for validation Minecraft version profile'
+		'Builds and verifies the release jar for validation Minecraft version profile'
 )
+
+tasks.register('collectReleaseJar', Copy) {
+	group = 'build'
+	description = 'Collects the active profile release jar into build/release/<profile_id>.'
+	dependsOn releaseJarTaskProvider
+
+	from(releaseJarFile)
+	into releaseOutputDirectory
+
+	doFirst {
+		delete releaseOutputDirectory
+	}
+}
+
+tasks.register('verifyReleaseMetadata') {
+	group = 'verification'
+	description = 'Verifies the active profile release jar metadata and required assets.'
+	dependsOn tasks.named('collectReleaseJar')
+
+	doLast {
+		def releaseJarName = releaseJarFile.get().asFile.name
+		def releaseJar = releaseOutputDirectory.get().file(releaseJarName).asFile
+		if (!releaseJar.isFile()) {
+			throw new GradleException("Missing release jar: ${releaseJar}")
+		}
+		if (modrinth_game_versions.isEmpty()) {
+			throw new GradleException("Profile ${minecraft_version_profile} has no modrinth_game_versions.")
+		}
+
+		def entries = [] as Set
+		def readEntryText = { java.util.zip.ZipFile zip, String entryName ->
+			def entry = zip.getEntry(entryName)
+			if (entry == null) {
+				throw new GradleException("${releaseJar.name} is missing ${entryName}")
+			}
+			zip.getInputStream(entry).withCloseable { stream ->
+				return stream.getText('UTF-8')
+			}
+		}
+
+		def fabricJsonText
+		def mixinJsonText
+		new java.util.zip.ZipFile(releaseJar).withCloseable { zip ->
+			def entryEnumeration = zip.entries()
+			while (entryEnumeration.hasMoreElements()) {
+				entries.add(entryEnumeration.nextElement().name)
+			}
+			fabricJsonText = readEntryText(zip, 'fabric.mod.json')
+			mixinJsonText = readEntryText(zip, 'lifetime-stat-tracker.client.mixins.json')
+		}
+
+		if (fabricJsonText.contains('${') || mixinJsonText.contains('${')) {
+			throw new GradleException("${releaseJar.name} contains unexpanded resource placeholders.")
+		}
+
+		def fabricMetadata = new groovy.json.JsonSlurper().parseText(fabricJsonText)
+		def mixinMetadata = new groovy.json.JsonSlurper().parseText(mixinJsonText)
+		def expectedJavaDependency = ">=${target_java_version}"
+		def expectedMixinCompatibility = "JAVA_${target_java_version}"
+
+		if (fabricMetadata.id != 'lifetime-stat-tracker') {
+			throw new GradleException("${releaseJar.name} declares mod id ${fabricMetadata.id}, expected lifetime-stat-tracker.")
+		}
+		if (fabricMetadata.version != project.version.toString()) {
+			throw new GradleException("${releaseJar.name} declares version ${fabricMetadata.version}, expected ${project.version}.")
+		}
+		if (fabricMetadata.depends.fabricloader != ">=${loader_version}") {
+			throw new GradleException("${releaseJar.name} declares Fabric Loader dependency ${fabricMetadata.depends.fabricloader}, expected >=${loader_version}.")
+		}
+		if (fabricMetadata.depends.minecraft != minecraft_dependency) {
+			throw new GradleException("${releaseJar.name} declares Minecraft dependency ${fabricMetadata.depends.minecraft}, expected ${minecraft_dependency}.")
+		}
+		if (fabricMetadata.depends.java != expectedJavaDependency) {
+			throw new GradleException("${releaseJar.name} declares Java dependency ${fabricMetadata.depends.java}, expected ${expectedJavaDependency}.")
+		}
+		if (fabricMetadata.depends['fabric-api'] != '*') {
+			throw new GradleException("${releaseJar.name} declares Fabric API dependency ${fabricMetadata.depends['fabric-api']}, expected *.")
+		}
+		if (!fabricMetadata.icon || !entries.contains(fabricMetadata.icon.toString())) {
+			throw new GradleException("${releaseJar.name} declares missing icon ${fabricMetadata.icon}.")
+		}
+		def mixinConfigs = (fabricMetadata.mixins ?: []).collect { mixin ->
+			mixin instanceof Map ? mixin.config : mixin.toString()
+		}
+		if (!mixinConfigs.contains('lifetime-stat-tracker.client.mixins.json')) {
+			throw new GradleException("${releaseJar.name} does not declare lifetime-stat-tracker.client.mixins.json.")
+		}
+		if (mixinMetadata.compatibilityLevel != expectedMixinCompatibility) {
+			throw new GradleException("${releaseJar.name} declares mixin compatibility ${mixinMetadata.compatibilityLevel}, expected ${expectedMixinCompatibility}.")
+		}
+		if (!(mixinMetadata.client ?: []).contains('ClientPacketListenerMixin')
+				|| !(mixinMetadata.client ?: []).contains('ClientAdvancementsMixin')) {
+			throw new GradleException("${releaseJar.name} is missing expected client mixins.")
+		}
+
+		println "Verified release metadata: ${releaseJar}"
+		println "  Minecraft dependency: ${minecraft_dependency}"
+		println "  Java dependency: ${expectedJavaDependency}"
+		println "  Modrinth game versions: ${modrinth_game_versions.join(', ')}"
+	}
+}
+
+tasks.register('buildRelease') {
+	group = 'build'
+	description = 'Builds, collects, and verifies the active Minecraft version profile release jar.'
+	dependsOn tasks.named('build')
+	dependsOn tasks.named('verifyReleaseMetadata')
+}
 
 tasks.register('printVersionProfile') {
 	group = 'help'

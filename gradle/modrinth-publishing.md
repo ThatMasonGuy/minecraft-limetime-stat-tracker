@@ -9,6 +9,8 @@ Publishing should be driven by supported Minecraft version profiles only.
 Profiles in `candidate_minecraft_version_profiles` must be ignored until they
 are promoted to `supported_minecraft_version_profiles`.
 
+Modrinth project id: `rJCvFZKh`.
+
 When only one supported profile exists, Modrinth `version_number` can be the mod
 version, such as `2.1.0`.
 
@@ -57,6 +59,8 @@ modrinth_token=...
 ```
 
 Do not store tokens in this repository.
+
+GitHub publishing should read the repository secret named `MODRINTH_TOKEN`.
 
 ## Release Notes
 
