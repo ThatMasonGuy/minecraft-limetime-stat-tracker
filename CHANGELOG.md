@@ -75,6 +75,8 @@ All notable project changes will be documented here.
   non-publishable.
 - Wired `check` to `verifySmokeTestMatrix`, so supported profiles must keep
   passing smoke records while candidates can remain tracked as pending.
+- Replaced the packaged mod icon with the new Lifetime Stat Tracker book/stat
+  artwork.
 - Replaced flat Minecraft/Fabric dependency properties with
   `minecraft_version_profile`, `supported_minecraft_version_profiles`, and
   `candidate_minecraft_version_profiles`.
