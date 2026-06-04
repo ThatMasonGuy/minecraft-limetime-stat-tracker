@@ -1,7 +1,8 @@
 # Lifetime Stat Tracker TODO
 
 Current checkpoint: GitHub Actions published `2.7.0` for supported `1.21.11` to
-Modrinth version `s24DbwkA`
+Modrinth version `s24DbwkA`; candidate smoke validation is now proving the
+remaining profiles before promotion.
 
 ## Project Workflow
 
@@ -144,6 +145,20 @@ Modrinth version `s24DbwkA`
    - Pushed commit `ecb72d6` and ran GitHub Actions workflow
      `modrinth publish` with `dry_run=false`, publishing `2.7.0` as Modrinth
      version `s24DbwkA`.
+9. Candidate smoke workflow and first evidence run:
+   - Added the manual GitHub Actions `candidate smoke validation` workflow for
+     full or filtered candidate launcher smoke runs.
+   - Installed Java 17, Java 21, and Java 25 in the build and Modrinth publish
+     workflows so GitHub can build every active profile.
+   - Ran GitHub Actions candidate smoke run `26934205756`. It passed the
+     packaged client-only launch for `1.21.11`, every `1.20-1.20.4` runtime,
+     every `1.20.5-1.21.10` runtime, and `26.1`, `26.1.1`, and `26.1.2`.
+   - The only failed runtime was `26.2-pre-3`, where Fabric Loader reported the
+     runtime as `26.2-pre.3` and rejected the broader profile's
+     `minecraft_dependency=>=26.1 <=26.2-` metadata.
+   - Updated the `26.1-26.2-pre-3` and exact `26.2-pre-3` smoke profile
+     dependency metadata to use Fabric Loader's `26.2-pre.3` runtime string
+     while keeping Modrinth game version labels as `26.2-pre-3`.
 
 ## Current Compatibility Conclusion
 
@@ -250,9 +265,10 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Keep regular push/PR CI on a fast default-profile build.
    - Add a manual compatibility validation workflow for targeted profiles.
    - Current status: Gradle wrapper upgraded to `9.4.0`, profile Java release
-     values are wired, Gradle toolchains are active locally, and local
-     `ciValidation`/`publishValidation` task roots exist; GitHub Actions
-     workflows still TODO.
+     values are wired, Gradle toolchains are active locally, local
+     `ciValidation`/`publishValidation` task roots exist, and GitHub Actions now
+     installs the Java 17, Java 21, and Java 25 toolchains needed by the profile
+     matrix.
 7. Minecraft `26.x` build lane:
    - Reuse Inventory Sort's proven model where applicable: non-remapping Loom
      for `26.x`, normal dependencies, and plain jar artifacts.
@@ -288,8 +304,10 @@ every exact Minecraft version listed in `modrinth_game_versions`.
      smoke testing pass.
    - Promote only smoke-passed groups into `supported_minecraft_version_profiles`.
    - Run the guarded publish workflow when release approval is given.
-   - Current status: ready for the first supported `1.21.11` manual workflow
-     dry run or guarded publish; broader candidate promotion remains TODO.
+   - Current status: first supported `1.21.11` guarded publish is complete.
+     Candidate smoke run `26934205756` passed every listed runtime except
+     `26.2-pre-3`; the prerelease metadata fix needs a focused GitHub rerun
+     before updating `gradle/smoke-tests.json` and promoting candidates.
 
 ## Compatibility Risk Surfaces
 

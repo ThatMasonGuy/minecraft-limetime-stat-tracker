@@ -60,6 +60,9 @@ All notable project changes will be documented here.
   - Added `gradle/release-notes/2.1.0.md` for the first Modrinth upload.
   - Added `gradle/release-notes/2.7.0.md` for the first live GitHub Actions
     publish test.
+- Added a manual GitHub Actions `candidate smoke validation` workflow that can
+  run the full supported-plus-candidate launcher smoke matrix or a focused
+  profile/game-version subset.
 
 ### Changed
 
@@ -83,6 +86,14 @@ All notable project changes will be documented here.
 - Bumped the Modrinth publish test version to `2.7.0`.
 - Published `2.7.0` through the guarded GitHub Actions Modrinth workflow as
   Modrinth version `s24DbwkA`.
+- Installed Java 17, Java 21, and Java 25 in the build, candidate smoke, and
+  Modrinth publish workflows so GitHub can run the full profile matrix.
+- Ran GitHub Actions candidate smoke run `26934205756`; all listed exact
+  runtimes passed except `26.2-pre-3`, which exposed a Fabric Loader prerelease
+  metadata mismatch rather than a source compatibility split.
+- Updated the `26.1-26.2-pre-3` Minecraft dependency range to include Fabric
+  Loader's `26.2-pre.3` runtime string while keeping Modrinth game version
+  labels as `26.2-pre-3`.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.
