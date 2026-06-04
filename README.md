@@ -1,6 +1,7 @@
 # Lifetime Stat Tracker
 
-A Fabric mod for Minecraft 1.21.11 that tracks lifetime stats across worlds, servers, Realms, and deleted saves.
+A Fabric mod for Minecraft `1.20` through `26.2-pre-3` that tracks lifetime
+stats across worlds, servers, Realms, and deleted saves.
 
 Unlike vanilla per-world stats, Lifetime Stat Tracker keeps cumulative totals in your config folder so progress is preserved even if worlds are renamed, deleted, or moved.
 
@@ -15,20 +16,26 @@ Unlike vanilla per-world stats, Lifetime Stat Tracker keeps cumulative totals in
 
 ## Supported Environment
 
-- Minecraft: `1.21.11`
-- Fabric Loader: `0.18.4+`
-- Fabric API: `0.140.2+1.21.11`
-- Java: `21+`
+- Minecraft: `1.20` through `26.2-pre-3`, published as compatibility-group jars
+  for `1.20-1.20.4`, `1.20.5-1.21.10`, `1.21.11`, and `26.1-26.2-pre-3`
+- Fabric Loader: `0.18.4+` for `1.20`/`1.21` profiles; `0.19.2+` for `26.x`
+- Fabric API: required; install the Fabric API build matching your Minecraft
+  version
+- Java: `17+` for `1.20-1.20.4`, `21+` for `1.20.5-1.21.11`, and `25+` for
+  `26.x`
 - Client install: supported
 - Server install: optional, improves per-world server identity
 
 ## Installation
 
-1. Install Fabric Loader for Minecraft 1.21.11.
-2. Install Fabric API in your `mods` folder.
-3. Place the Lifetime Stat Tracker jar in your `mods` folder.
-4. For best multiplayer world separation, also install the mod on compatible Fabric servers.
-5. Launch the game.
+1. Install Fabric Loader for your Minecraft version.
+2. Install the matching Fabric API in your `mods` folder.
+3. Download the Lifetime Stat Tracker jar that matches your Minecraft
+   compatibility range.
+4. Place the Lifetime Stat Tracker jar in your `mods` folder.
+5. For best multiplayer world separation, also install the mod on compatible
+   Fabric servers.
+6. Launch the game.
 
 ## How Tracking Works
 

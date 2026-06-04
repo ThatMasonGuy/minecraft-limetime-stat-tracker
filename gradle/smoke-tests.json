@@ -1,49 +1,38 @@
 {
   "schema_version": 1,
   "profiles": {
-    "1.21.11": {
-      "profile_id": "1.21.11",
-      "game_versions": {
-        "1.21.11": {
-          "status": "pass",
-          "tested_at": "2026-06-04",
-          "method": "automated smokeTestSupportedClients launch",
-          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
-        }
-      }
-    },
     "1.20-1.20.4": {
       "profile_id": "1.20-1.20.4",
       "game_versions": {
         "1.20": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.20.1": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.20.2": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.20.3": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.20.4": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         }
       }
     },
@@ -51,82 +40,93 @@
       "profile_id": "1.20.5-1.21.10",
       "game_versions": {
         "1.20.5": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.20.6": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.1": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.2": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.3": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.4": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.5": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.6": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.7": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.8": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.9": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "1.21.10": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
+        }
+      }
+    },
+    "1.21.11": {
+      "profile_id": "1.21.11",
+      "game_versions": {
+        "1.21.11": {
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "automated smokeTestSupportedClients launch and GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         }
       }
     },
@@ -134,28 +134,28 @@
       "profile_id": "26.1-26.2-pre-3",
       "game_versions": {
         "26.1": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "26.1.1": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "26.1.2": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26934205756",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         },
         "26.2-pre-3": {
-          "status": "pending",
-          "tested_at": "",
-          "method": "",
-          "notes": "Candidate release jar builds; exact runtime launch still required before promotion."
+          "status": "pass",
+          "tested_at": "2026-06-04",
+          "method": "GitHub Actions candidate smoke validation run 26935246770",
+          "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only after the Fabric Loader prerelease dependency metadata fix, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         }
       }
     }

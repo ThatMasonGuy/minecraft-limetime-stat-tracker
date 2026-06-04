@@ -18,17 +18,24 @@ not publishable.
 
 ## Current Status
 
-The supported `1.21.11` profile has passed the automated packaged-jar client
-smoke launch:
+All four release profiles have passing packaged-jar client smoke records:
 
-- install set: `lifetime-stat-tracker-client-only`
-- task: `smokeTestSupportedClients`
-- pass marker: `LIFETIMESTATTRACKER_SMOKE_TEST_PASS`
-- result date: `2026-06-04`
+- `1.20-1.20.4`
+- `1.20.5-1.21.10`
+- `1.21.11`
+- `26.1-26.2-pre-3`
 
-Candidate release profiles are tracked in `gradle/smoke-tests.json` as
-`pending` until every exact Minecraft runtime listed in `modrinth_game_versions`
-has launched successfully.
+GitHub Actions candidate smoke run `26934205756` passed every listed exact
+runtime except `26.2-pre-3`. After the Fabric Loader prerelease dependency
+metadata fix, focused run `26935246770` passed `26.2-pre-3`.
+
+Each pass used install set `lifetime-stat-tracker-client-only`, reached the
+client tick loop, force-loaded `ClientPacketListener` and `ClientAdvancements`,
+printed `LIFETIMESTATTRACKER_SMOKE_TEST_PASS`, and exited cleanly.
+
+There are currently no candidate release profiles. New candidates should be
+tracked in `gradle/smoke-tests.json` as `pending` until every exact Minecraft
+runtime listed in `modrinth_game_versions` has launched successfully.
 
 ## Runtime Profiles
 

@@ -94,6 +94,13 @@ All notable project changes will be documented here.
 - Updated the `26.1-26.2-pre-3` Minecraft dependency range to include Fabric
   Loader's `26.2-pre.3` runtime string while keeping Modrinth game version
   labels as `26.2-pre-3`.
+- Ran focused GitHub Actions candidate smoke run `26935246770`, which passed
+  `26.2-pre-3` after the prerelease dependency metadata fix.
+- Promoted `1.20-1.20.4`, `1.20.5-1.21.10`, and `26.1-26.2-pre-3` from
+  candidate to supported after every listed exact runtime had a passing
+  packaged-jar client smoke record.
+- Updated the user-facing README and `gradle/release-notes/2.7.0.md` for the
+  full `1.20` through `26.2-pre-3` compatibility-group release.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.

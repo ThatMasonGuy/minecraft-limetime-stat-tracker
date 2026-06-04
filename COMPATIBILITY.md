@@ -14,7 +14,7 @@ compatibility groups by default. Split a candidate only when one compiled jar
 literally cannot cover the combined runtime dependency metadata, binary
 compatibility, or smoke-test matrix.
 
-Recommended initial release profile map:
+Supported release profile map:
 
 | Release profile | Compile anchor | Runtime claim after smoke tests | Java | Source compat group |
 | --- | --- | --- | ---: | --- |
@@ -23,9 +23,10 @@ Recommended initial release profile map:
 | `1.21.11` | `1.21.11` | `1.21.11` | 21 | `1.21.11` |
 | `26.1-26.2-pre-3` | `26.2-pre-3` | `26.1`, `26.1.1`, `26.1.2`, `26.2-pre-3` | 25 | `26.x` |
 
-Compile probes now pass for this initial four-profile map. Keep `1.21.11`
-separate as the current supported baseline until exact-version smoke tests and
-release metadata prove a broader profile can honestly cover it.
+Compile probes and packaged-jar client smoke tests now pass for this
+four-profile map. Keep `1.21.11` separate as its own proven release profile
+unless a later release-planning pass decides to collapse it into a broader
+tested profile.
 
 The `1.20-1.20.4` release profile can stay as one profile only if its
 advancement mixin treats advancement keys as raw objects and extracts ids via a

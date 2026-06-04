@@ -1,9 +1,10 @@
 # Minecraft Version Profiles
 
 This directory contains the multi-version profile metadata used by Gradle. The
-current supported build remains Minecraft `1.21.11`; broader profiles are
-candidates until metadata checks and smoke tests prove them. Current candidate
-compile probes pass through `buildValidationVersions`.
+current supported builds cover Minecraft `1.20` through `26.2-pre-3` through
+four compatibility-group release profiles. Compile probes and packaged-jar
+client smoke tests have passed for every exact game version listed by those
+profiles.
 
 ## Goal
 
@@ -27,18 +28,18 @@ unless we intentionally decide to publish more jars.
 
 ```properties
 minecraft_version_profile=1.21.11
-supported_minecraft_version_profiles=1.21.11
-candidate_minecraft_version_profiles=1.20-1.20.4,1.20.5-1.21.10,26.1-26.2-pre-3
+supported_minecraft_version_profiles=1.20-1.20.4,1.20.5-1.21.10,1.21.11,26.1-26.2-pre-3
+candidate_minecraft_version_profiles=
 ```
 
-Only move a profile from candidate to supported after it builds, verifies
-metadata, and passes launcher smoke tests for every listed game version.
+Only keep a profile supported while it builds, verifies metadata, and has
+passing launcher smoke records for every listed game version.
 
-Candidate profiles start aligned with source compatibility groups. Split a
-profile only after compile probes, binary runtime checks, dependency metadata,
+Candidate profiles should start aligned with source compatibility groups. Split
+a profile only after compile probes, binary runtime checks, dependency metadata,
 or smoke tests prove that one jar cannot honestly cover the proposed range.
-Prefer the fewest unique build artifacts possible; do not add separate builds for
-patch ranges that can share one compatible jar.
+Prefer the fewest unique build artifacts possible; do not add separate builds
+for patch ranges that can share one compatible jar.
 
 ## Profile Fields
 
@@ -83,9 +84,9 @@ Current profile-foundation commands:
 
 `buildRelease` builds the active profile, collects the release jar under
 `build/release/<profile_id>/`, and verifies packaged metadata. `buildAllVersions`
-builds only profiles listed in `supported_minecraft_version_profiles`, which is
-currently just `1.21.11`. `buildValidationVersions` includes candidates and
-currently passes for the initial four-profile compile matrix.
+builds profiles listed in `supported_minecraft_version_profiles`.
+`buildValidationVersions` includes supported profiles plus any candidates; the
+candidate list is currently empty after promotion.
 
 Current smoke commands:
 

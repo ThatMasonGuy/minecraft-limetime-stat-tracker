@@ -1,8 +1,8 @@
 # Lifetime Stat Tracker TODO
 
 Current checkpoint: GitHub Actions published `2.7.0` for supported `1.21.11` to
-Modrinth version `s24DbwkA`; candidate smoke validation is now proving the
-remaining profiles before promotion.
+Modrinth version `s24DbwkA`; all compatibility-group profiles now have GitHub
+smoke proof and are promoted for the all-profile Modrinth publish.
 
 ## Project Workflow
 
@@ -85,7 +85,7 @@ remaining profiles before promotion.
      can configure.
    - Verified `.\gradlew.bat build --no-daemon --console=plain`,
      `.\gradlew.bat buildAllVersions --no-daemon --console=plain`, and
-     `printVersionProfile` for all candidate profiles.
+     `printVersionProfile` for the initial validation profiles.
 4. Compatibility adapter layer:
    - Added profile-selected compatibility overlays for stat packet extraction,
      custom world-identity networking, and client command factories.
@@ -130,7 +130,8 @@ remaining profiles before promotion.
      `smokeTestSupportedClients`, `smokeTestSelectedClients`,
      `smokeTestValidationClients`, `publishValidation`, and `ciValidation`.
    - Verified `.\gradlew.bat smokeTestSupportedClients --no-daemon --console=plain`
-     for supported `1.21.11`; candidate rows remain `pending`.
+     for supported `1.21.11`; broader profile smoke proof was later completed
+     in GitHub Actions.
 8. Modrinth publishing automation:
    - Added `prepareModrinthUploads`, `publishModrinthDryRun`, and
      `publishModrinth`.
@@ -159,20 +160,32 @@ remaining profiles before promotion.
    - Updated the `26.1-26.2-pre-3` and exact `26.2-pre-3` smoke profile
      dependency metadata to use Fabric Loader's `26.2-pre.3` runtime string
      while keeping Modrinth game version labels as `26.2-pre-3`.
+   - Ran focused GitHub Actions candidate smoke run `26935246770`, which passed
+     `26.2-pre-3` after the prerelease dependency metadata fix.
+10. Release promotion:
+   - Updated `gradle/smoke-tests.json` so every exact Minecraft version listed
+     by the four release profiles has a passing packaged-jar client smoke
+     record.
+   - Promoted `1.20-1.20.4`, `1.20.5-1.21.10`, and `26.1-26.2-pre-3` from
+     candidate to supported, leaving `candidate_minecraft_version_profiles`
+     empty.
+   - Updated `README.md`, `COMPATIBILITY.md`, `gradle/version-profiles/README.md`,
+     `gradle/smoke-tests.md`, and `gradle/release-notes/2.7.0.md` for the
+     supported `1.20` through `26.2-pre-3` release shape.
 
 ## Current Compatibility Conclusion
 
 The drift audit is good news for this mod: the compatibility surface is narrow
-enough that we should target the fewest unique build artifacts possible.
-Candidate release profiles should align with source overlays by default, with
-splits added only when one jar literally cannot support the combined range.
+enough that we can target the fewest unique build artifacts possible. Supported
+release profiles align with source overlays, with splits added only when one jar
+literally cannot support the combined range.
 
-Use this initial map for the profile implementation:
+Use this map for the promoted profile implementation:
 
 - Release profile `1.20-1.20.4` uses source compat group `1.20-1.20.4`.
 - Release profile `1.20.5-1.21.10` uses source compat group
   `1.20.5-1.21.10`.
-- Release profile `1.21.11` stays separate as the current supported baseline;
+- Release profile `1.21.11` stays separate as its own supported profile;
   descriptor-safe helpers now exist, so a later release-planning pass can decide
   whether it should collapse into a broader tested profile.
 - Release profile `26.1-26.2-pre-3` uses source compat group `26.x`.
@@ -180,10 +193,8 @@ Use this initial map for the profile implementation:
 Do not over-split by copying Inventory Sort's GUI-driven groups unless compile
 probes, binary runtime checks, dependency metadata, or smoke tests show a real
 Lifetime Stat Tracker break that prevents one jar from covering the combined
-range. The first implementation pass now compiles for all four release profiles,
-and the supported `1.21.11` profile has passed automated packaged-jar client
-smoke testing. Candidate exact-runtime launches are still pending evidence
-gates.
+range. The first implementation pass now compiles and smoke-tests successfully
+for all four release profiles.
 
 ## Migration Goal
 
@@ -198,7 +209,8 @@ advancements, commands, networking, Java levels, and `26.x` build mechanics.
 
 ## Proposed Compatibility Groups
 
-These are starting source compatibility groups, not supported releases:
+These are source compatibility groups, mapped to the current supported release
+profiles:
 
 | Source compat group | Release profiles using it | Java | Expected role |
 | --- | --- | ---: | --- |
@@ -207,7 +219,7 @@ These are starting source compatibility groups, not supported releases:
 | `1.21.11` | `1.21.11` | 21 | Same typed payload and command APIs as earlier `1.21.x`, but `Registry#getKey` and `AdvancementHolder#id` now return `Identifier`. May collapse after descriptor-safe helpers exist. |
 | `26.x` | `26.1-26.2-pre-3` | 25 | Java 25/non-remap lane with `ClientCommands` and `PayloadTypeRegistry.clientboundPlay/serverboundPlay`. |
 
-Only move a profile to supported/publishable after its packaged jar launches on
+Only keep a profile supported/publishable while its packaged jar has launched on
 every exact Minecraft version listed in `modrinth_game_versions`.
 
 ## Migration Roadmap
@@ -237,16 +249,16 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Collect release jars under `build/release/<profile_id>/`.
    - Add metadata verification for mod id, version, Minecraft dependency, Java
      dependency, icon path, and Mixin compatibility level.
-   - Current status: DONE for compile-level release jars. Runtime smoke gates
-     still block publish promotion.
+   - Current status: DONE for release jars, metadata verification, and
+     smoke-gated publish promotion.
 4. Compile probe matrix:
    - Probe exact runtimes first, using the Inventory Sort version metadata as a
      starting point.
    - Record failures by API surface rather than by raw compiler error only.
    - Split or merge profile groups based on evidence.
    - Current status: DONE for the current four-profile compile matrix via
-     `buildValidationVersions`; supported `1.21.11` runtime smoke passed, and
-     candidate exact-version runtime smoke probes remain TODO.
+     `buildValidationVersions`; GitHub Actions smoke proof now covers every
+     exact runtime listed by the four supported release profiles.
 5. Compatibility shims:
    - Keep shared behavior in `src/main/java` and `src/client/java`.
    - Add `src/compat/<compat_group>/main/java` or
@@ -279,17 +291,17 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Probe payload, command, packet, advancement, registry key, and server
      reflection APIs under `26.1.2` and `26.2-pre-3`.
    - Current status: profile config resolves under Loom `1.16`, Java 25
-     toolchain compile passes, and source compatibility probes are green for
-     the current `26.2-pre-3` compile anchor. Launcher smoke probes still TODO.
+     toolchain compile passes, source compatibility probes are green for the
+     current `26.2-pre-3` compile anchor, and launcher smoke proof has passed
+     for `26.1`, `26.1.1`, `26.1.2`, and `26.2-pre-3`.
 8. Smoke-test automation:
    - Add a minimal client smoke launcher that installs the packaged release jar,
      reaches the client tick loop, force-loads mixin targets, and exits with a
      clear pass marker.
    - Later add optional client-plus-server identity smoke coverage if practical.
-   - Current status: DONE for the supported `1.21.11` client-only baseline.
-     Candidate exact-runtime launches are tracked as `pending` in
-     `gradle/smoke-tests.json`, and optional client-plus-server identity smoke
-     coverage remains TODO.
+   - Current status: DONE for client-only packaged-jar launcher smoke coverage
+     across every exact Minecraft version listed by the four supported release
+     profiles. Optional client-plus-server identity smoke coverage remains TODO.
 9. Modrinth publishing:
    - Add guarded dry-run and real publish tasks after profiles, metadata checks,
      and smoke records exist.
@@ -297,17 +309,16 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Use `gradle/release-notes/<mod_version>.md` for Modrinth changelogs.
    - Current status: project id `rJCvFZKh` is recorded, GitHub repository
      secret `MODRINTH_TOKEN` is expected, Fabric API dependency id `P7dR8mSH`
-     is recorded, guarded upload/dry-run tasks exist, and the local dry run has
-     passed for supported `1.21.11`.
+     is recorded, guarded upload/dry-run tasks exist, and GitHub smoke proof is
+     in place for every supported profile.
 10. Release promotion:
    - Keep new groups in `candidate_minecraft_version_profiles` until compile and
      smoke testing pass.
    - Promote only smoke-passed groups into `supported_minecraft_version_profiles`.
    - Run the guarded publish workflow when release approval is given.
    - Current status: first supported `1.21.11` guarded publish is complete.
-     Candidate smoke run `26934205756` passed every listed runtime except
-     `26.2-pre-3`; the prerelease metadata fix needs a focused GitHub rerun
-     before updating `gradle/smoke-tests.json` and promoting candidates.
+     All four release profiles are promoted and ready for the guarded all-profile
+     Modrinth publish workflow.
 
 ## Compatibility Risk Surfaces
 
