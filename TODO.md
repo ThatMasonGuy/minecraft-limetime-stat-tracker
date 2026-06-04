@@ -2,7 +2,9 @@
 
 Current checkpoint: GitHub Actions published `2.7.0` for supported `1.21.11` to
 Modrinth version `s24DbwkA`, then published the promoted compatibility-group
-release entries for Minecraft `1.20` through `26.2-pre-3`.
+release entries for Minecraft `1.20` through `26.2-pre-3`. The repo now tracks
+source-of-truth Modrinth project page copy, and the live page has been updated
+from that source with API readback verification.
 
 ## Project Workflow
 
@@ -185,6 +187,20 @@ release entries for Minecraft `1.20` through `26.2-pre-3`.
      - `2.7.0+mc26.1-26.2-pre-3` as version `ZUmFCvMh`.
    - The earlier unsuffixed `2.7.0` publish for `1.21.11` remains Modrinth
      version `s24DbwkA`.
+12. Modrinth project page copy:
+   - Added `gradle/modrinth-project-pages.md` as the source-of-truth file for
+     the Lifetime Stat Tracker project summary and description page.
+   - Rewrote the page copy to lead with personal lifetime stat history and to
+     describe server behavior accurately: client-only installs use safe server
+     aggregates, while accurate per-world tracking on reset, multi-world, or
+     proxy-routed Fabric servers needs the server-side install.
+   - Updated `AGENTS.md`, `README.md`, and `gradle/modrinth-publishing.md` so
+     future agents know project-page metadata is separate from version uploads.
+   - Updated `fabric.mod.json` to use the same short summary as the Modrinth
+     source copy.
+   - Updated the live Lifetime Stat Tracker Modrinth project summary and
+     description page through the Modrinth API, with readback verification.
+   - Saved before/after API snapshots under ignored `build/modrinth/` artifacts.
 
 ## Current Compatibility Conclusion
 
@@ -325,6 +341,9 @@ every exact Minecraft version listed in `modrinth_game_versions`.
      is recorded, guarded upload/dry-run tasks exist, GitHub smoke proof is in
      place for every supported profile, and the first all-profile publish is
      complete.
+   - Project-page summary and long-description copy now live in
+     `gradle/modrinth-project-pages.md`; version publish tasks still upload
+     only jars and per-version changelogs.
 10. Release promotion:
    - Keep new groups in `candidate_minecraft_version_profiles` until compile and
      smoke testing pass.

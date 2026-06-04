@@ -3,7 +3,7 @@
   "id": "lifetime-stat-tracker",
   "version": "${version}",
   "name": "Lifetime Stat Tracker",
-  "description": "Track your Minecraft statistics across all worlds, even after they're deleted. Perfect for hardcore players who want to preserve their lifetime achievements.",
+  "description": "Track lifetime Minecraft stats across worlds, saves, Realms, servers, and resets.",
   "authors": ["Tempest Studios"],
   "contact": {
     "homepage": "https://github.com/tempeststudios/lifetime-stat-tracker"

@@ -113,3 +113,21 @@ installing the release.
 
 Use `CHANGELOG.md` for broad repo history and
 `gradle/release-notes/<version>.md` for the exact Modrinth-facing notes.
+
+## Project Page Copy
+
+Modrinth project summaries and long descriptions are tracked in:
+
+```text
+gradle/modrinth-project-pages.md
+```
+
+Update this file before changing live Modrinth project metadata. The publishing
+tasks upload version files and per-version changelogs only; they do not update
+the project summary, project body, gallery, categories, or other page-level
+metadata.
+
+For local project metadata updates, provide `MODRINTH_TOKEN` from a non-repo
+location such as `.env`, PowerShell environment variables, or a user-level
+secret store. Do not print or commit token values. Save before/after API
+snapshots under ignored `build/modrinth/` artifacts when updating the live page.

@@ -14,7 +14,9 @@ Read these files before making changes:
 6. `gradle/smoke-tests.md` for the planned local and CI smoke-test gates.
 7. `gradle/modrinth-publishing.md` for release notes, secrets, dry runs, and
    guarded publishing.
-8. `gradle/compatibility-release-playbook.md` for the portable strategy borrowed
+8. `gradle/modrinth-project-pages.md` for the Modrinth project summary and
+   description-page source copy.
+9. `gradle/compatibility-release-playbook.md` for the portable strategy borrowed
    from Inventory Sort and adapted to this simpler single-mod repo.
 
 After reading the docs, run `git status --short` before editing. Preserve any
@@ -48,6 +50,10 @@ unrelated user changes.
   concise per-release note file at `gradle/release-notes/<mod_version>.md`.
   This file is the Modrinth changelog for that version. Do not rely on the full
   `CHANGELOG.md` or the whole `## Unreleased` section for Modrinth uploads.
+- Keep Modrinth project-page copy in `gradle/modrinth-project-pages.md`. Version
+  publishing uploads jars and per-version changelogs only; it does not update
+  the project summary, description body, gallery, categories, or other
+  page-level metadata.
 - Keep the active `gradle/release-notes/<mod_version>.md` file updated as
   user-facing changes accumulate for that Modrinth release. Put internal build,
   shim, CI, docs, and migration details in `CHANGELOG.md` and `TODO.md`

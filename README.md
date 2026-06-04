@@ -221,6 +221,7 @@ build/libs/
 - `gradle/version-profiles/README.md` - active profile metadata model
 - `gradle/smoke-tests.md` - planned launcher smoke-test gate
 - `gradle/modrinth-publishing.md` - planned guarded publishing rules
+- `gradle/modrinth-project-pages.md` - source copy for the Modrinth summary and description page
 
 ## License
 

@@ -63,6 +63,8 @@ All notable project changes will be documented here.
 - Added a manual GitHub Actions `candidate smoke validation` workflow that can
   run the full supported-plus-candidate launcher smoke matrix or a focused
   profile/game-version subset.
+- Added `gradle/modrinth-project-pages.md` as source-of-truth copy for the
+  Modrinth project summary and description page.
 
 ### Changed
 
@@ -107,6 +109,13 @@ All notable project changes will be documented here.
   - `2.7.0+mc1.20.5-1.21.10` as Modrinth version `W2Sk9t0L`.
   - `2.7.0+mc1.21.11` as Modrinth version `PErEJCCl`.
   - `2.7.0+mc26.1-26.2-pre-3` as Modrinth version `ZUmFCvMh`.
+- Updated the Modrinth project-page copy and Fabric metadata summary to avoid
+  overstating server-side behavior; client-only installs use safe server
+  aggregates, while accurate reset/multi-world Fabric server tracking needs the
+  optional server install.
+- Updated the live Lifetime Stat Tracker Modrinth project summary and
+  description page through the Modrinth API, with readback verification and
+  ignored before/after snapshots under `build/modrinth/`.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.
