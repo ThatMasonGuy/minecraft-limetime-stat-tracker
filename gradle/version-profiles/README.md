@@ -93,8 +93,14 @@ Current smoke commands:
 ```powershell
 .\gradlew.bat verifySmokeTestMatrix
 .\gradlew.bat smokeTestSupportedClients
+.\gradlew.bat smokeTestSupportedServers
+.\gradlew.bat smokeTestSupported
 .\gradlew.bat smokeTestSelectedClients "-Plifetimestattracker_smoke_profiles=1.20.5-1.21.10" "-Plifetimestattracker_smoke_game_versions=1.21.10"
+.\gradlew.bat smokeTestSelectedServers "-Plifetimestattracker_smoke_profiles=1.21.11" "-Plifetimestattracker_smoke_game_versions=1.21.11"
+.\gradlew.bat smokeTestSelected "-Plifetimestattracker_smoke_profiles=1.21.11" "-Plifetimestattracker_smoke_game_versions=1.21.11" "-Plifetimestattracker_smoke_install_sets=lifetime-stat-tracker-server-only"
 .\gradlew.bat smokeTestValidationClients
+.\gradlew.bat smokeTestValidationServers
+.\gradlew.bat smokeTestValidation
 .\gradlew.bat publishValidation
 .\gradlew.bat ciValidation
 ```

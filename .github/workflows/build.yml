@@ -1,6 +1,6 @@
 # Automatically run a fast supported-profile release build for every push and
-# submitted pull request. The expensive launcher smoke and Modrinth publish gate
-# runs in the manual Modrinth publish workflow before upload.
+# submitted pull request. The expensive client/server launcher smoke and
+# Modrinth publish gate runs in manual workflows before upload.
 
 name: build
 on: [pull_request, push]

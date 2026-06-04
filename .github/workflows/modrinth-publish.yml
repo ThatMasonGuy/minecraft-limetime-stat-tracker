@@ -97,3 +97,6 @@ jobs:
           path: |
             build/modrinth/upload-plan.json
             build/release/
+            build/smoke-logs/
+            build/smoke-mod-lists/
+            build/smoke-run/

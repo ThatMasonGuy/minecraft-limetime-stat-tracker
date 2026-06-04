@@ -6,6 +6,8 @@ release entries for Minecraft `1.20` through `26.2-pre-3`. The repo now tracks
 source-of-truth Modrinth project page copy, and the live page has been updated
 from that source with API readback verification. The `v2.7.0` Git tag and
 GitHub Release have been backfilled to point at the all-profile publish commit.
+The smoke pipeline now includes dedicated-server launch coverage for the
+optional server component.
 
 ## Project Workflow
 
@@ -210,9 +212,24 @@ GitHub Release have been backfilled to point at the all-profile publish commit.
      surface.
    - Backfilled the `v2.7.0` release checkpoint against publish workflow commit
      `30fb089`, the `headSha` for successful GitHub Actions run `26935626612`.
-   - Next pipeline-hardening step: add dedicated server-side smoke coverage for
-     the optional server identity component, then wire that into GitHub testing
-     and publishing gates.
+14. Dedicated server smoke pipeline:
+   - Added `LifetimeStatTrackerServerSmokeTest`, armed only by the smoke-test
+     system property, which waits for the dedicated server tick loop, verifies
+     `/lstserver` is registered, resolves the advertised world identity through
+     the same server code path, prints
+     `LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS`, and stops the server.
+   - Added `lifetime-stat-tracker-server-only` smoke install set, server smoke
+     task roots, aggregate client-plus-server smoke roots, isolated server run
+     directories, EULA/server.properties setup, smoke logs, and mandatory pass
+     marker checks for both client and server smoke tasks.
+   - Wired `ciValidation`, `publishValidation`, the manual candidate smoke
+     workflow, and the Modrinth publish workflow artifact capture through the
+     aggregate smoke gates.
+   - Verified focused `1.21.11` server smoke, focused `1.21.11` client smoke,
+     workflow-shaped filtered `smokeTestSelected` server smoke, and
+     `buildValidationVersions` across all supported profiles.
+   - Remaining future hardening: add a true client-to-dedicated-server handshake
+     smoke if we decide the heavier local two-process test is worth the runtime.
 
 ## Current Compatibility Conclusion
 
@@ -339,10 +356,15 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Add a minimal client smoke launcher that installs the packaged release jar,
      reaches the client tick loop, force-loads mixin targets, and exits with a
      clear pass marker.
-   - Later add optional client-plus-server identity smoke coverage if practical.
+   - Add dedicated server smoke coverage for the optional server component.
+   - Later add a true client-plus-dedicated-server identity handshake smoke if
+     practical.
    - Current status: DONE for client-only packaged-jar launcher smoke coverage
      across every exact Minecraft version listed by the four supported release
-     profiles. Optional client-plus-server identity smoke coverage remains TODO.
+     profiles. Dedicated server smoke task roots are now wired into
+     `ciValidation` and `publishValidation`, with focused `1.21.11` proof
+     completed locally. Full all-version server smoke proof should come from
+     the manual GitHub Actions smoke workflow.
 9. Modrinth publishing:
    - Add guarded dry-run and real publish tasks after profiles, metadata checks,
      and smoke records exist.
@@ -350,9 +372,9 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Use `gradle/release-notes/<mod_version>.md` for Modrinth changelogs.
    - Current status: project id `rJCvFZKh` is recorded, GitHub repository
      secret `MODRINTH_TOKEN` is expected, Fabric API dependency id `P7dR8mSH`
-     is recorded, guarded upload/dry-run tasks exist, GitHub smoke proof is in
-     place for every supported profile, and the first all-profile publish is
-     complete.
+     is recorded, guarded upload/dry-run tasks exist, client GitHub smoke proof
+     is in place for every supported profile, dedicated server smoke is now part
+     of the publish gate, and the first all-profile publish is complete.
    - Project-page summary and long-description copy now live in
      `gradle/modrinth-project-pages.md`; version publish tasks still upload
      only jars and per-version changelogs.

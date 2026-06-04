@@ -87,6 +87,10 @@ unrelated user changes.
 - For this repo, smoke testing can be much simpler than Inventory Sort because
   there is one public mod jar. The important invariant is that the packaged jar
   launches on every exact Minecraft version listed in its profile metadata.
+- `ciValidation` and `publishValidation` now include both client launch smoke
+  and dedicated-server launch smoke. Use `smokeTestSelectedClients` or
+  `smokeTestSelectedServers` for focused local checks, and use aggregate
+  `smokeTestSelected` when validating workflow-shaped install-set filters.
 - Real Modrinth uploads should go through the guarded GitHub workflow unless the
   user explicitly asks for a local publish task.
 

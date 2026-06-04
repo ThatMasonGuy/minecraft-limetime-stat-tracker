@@ -26,8 +26,10 @@ The first release pipeline can therefore focus on:
 
 - one mod id: `lifetime-stat-tracker`
 - one release jar per compatibility group
-- one client-only smoke install set
-- optional server identity smoke tests later
+- one client smoke install set
+- one dedicated-server smoke install set for optional server component launch
+  and world identity resolution
+- optional full client-to-dedicated-server identity handshake smoke later
 
 ## What Is Still Risky
 
@@ -64,7 +66,8 @@ Keep two profile lists:
 - `candidate_minecraft_version_profiles`: builds or experiments that are not
   publishable yet.
 - `supported_minecraft_version_profiles`: profiles that have compiled, passed
-  launcher smoke testing for every listed game version, and can be published.
+  required client and dedicated-server launcher smoke testing for every listed
+  game version, and can be published.
 
 ## Source Layout
 
@@ -93,11 +96,13 @@ Use a fast local loop and move expensive proof to CI:
 2. Targeted profile build when touching a specific Minecraft version.
 3. Build all supported profiles when changing metadata, overlays, packaging, or
    shared code with cross-version risk.
-4. Focused launcher smoke test for suspected runtime issues.
-5. Full smoke matrix in GitHub Actions before publishing.
+4. Focused client or dedicated-server launcher smoke test for suspected runtime
+   issues.
+5. Full client-plus-server smoke matrix in GitHub Actions before publishing.
 
-The key invariant is that the packaged release jar launches under every
-Minecraft version listed in `modrinth_game_versions`.
+The key invariant is that the packaged release jar launches as both a client mod
+and an optional dedicated-server mod under every Minecraft version listed in
+`modrinth_game_versions`.
 
 ## Publishing Gate
 
@@ -110,7 +115,8 @@ Before publishing:
    changes for that release.
 3. Build every supported profile.
 4. Verify release jar metadata and Modrinth upload metadata.
-5. Run launcher smoke tests for every listed game version.
+5. Run client and dedicated-server launcher smoke tests for every listed game
+   version.
 6. Dry-run the Modrinth upload plan.
 7. Publish through a guarded manual workflow after review.
 
@@ -122,7 +128,8 @@ only after the exact packaged jar has launched on that version.
 Local development should stay fast. The normal push/PR workflow should run a
 default-profile build and metadata checks. The manual publish workflow should
 install all required Java toolchains, run the expensive smoke matrix under a
-virtual display where needed, and publish only after that gate passes.
+virtual display where needed for client launches, run server launches without
+`xvfb`, and publish only after that gate passes.
 
 ## Release Notes
 

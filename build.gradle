@@ -509,9 +509,24 @@ def smokeInstallSets = [
 		[
 				id         : 'lifetime-stat-tracker-client-only',
 				taskSuffix : 'ClientOnly',
+				kind       : 'client',
+				launchTask : ':smokelaunch:runClient',
+				requiresXvfb: true,
+				passMarker : 'LIFETIMESTATTRACKER_SMOKE_TEST_PASS',
 				description: 'Lifetime Stat Tracker client jar only'
+		],
+		[
+				id         : 'lifetime-stat-tracker-server-only',
+				taskSuffix : 'ServerOnly',
+				kind       : 'server',
+				launchTask : ':smokelaunch:runServer',
+				requiresXvfb: false,
+				passMarker : 'LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS',
+				description: 'Lifetime Stat Tracker jar on a dedicated Fabric server'
 		]
 ]
+def clientSmokeInstallSets = smokeInstallSets.findAll { it.kind == 'client' }
+def serverSmokeInstallSets = smokeInstallSets.findAll { it.kind == 'server' }
 
 def selectedSmokeFiltersConfigured = !selectedSmokeProfileFilters.isEmpty()
 		|| !selectedSmokeGameVersionFilters.isEmpty()
@@ -536,20 +551,20 @@ def filteredSmokeGameVersions = { Properties profile ->
 	return gameVersions.findAll { selectedSmokeGameVersionFilters.contains(it) }
 }
 
-def filteredSmokeInstallSets = {
+def filteredSmokeInstallSets = { List<Map> installSets ->
 	if (selectedSmokeInstallSetFilters.isEmpty()) {
-		return smokeInstallSets
+		return installSets
 	}
-	return smokeInstallSets.findAll {
+	return installSets.findAll {
 		selectedSmokeInstallSetFilters.contains(it.id) || selectedSmokeInstallSetFilters.contains(it.taskSuffix)
 	}
 }
 
-def registerSmokeTasks = { List<String> profiles, String taskPrefix, String buildTaskPrefix, boolean applySelectionFilters ->
+def registerSmokeTasks = { List<String> profiles, String taskPrefix, String buildTaskPrefix, boolean applySelectionFilters, List<Map> installSets ->
 	def smokeTasks = []
 	def previousSmokeTask = null
 	def profilesForSmoke = applySelectionFilters ? filteredSmokeProfiles(profiles) : profiles
-	def installSetsForSmoke = applySelectionFilters ? filteredSmokeInstallSets() : smokeInstallSets
+	def installSetsForSmoke = applySelectionFilters ? filteredSmokeInstallSets(installSets) : installSets
 
 	profilesForSmoke.each { profileName ->
 		def profile = loadVersionProfile(profileName)
@@ -562,9 +577,11 @@ def registerSmokeTasks = { List<String> profiles, String taskPrefix, String buil
 			installSetsForSmoke.each { installSet ->
 				def taskName = "${taskPrefix}${safeTaskSuffix(profileName)}On${safeTaskSuffix(gameVersion)}${installSet.taskSuffix}"
 				def modListFile = layout.buildDirectory.file("smoke-mod-lists/${profileId}/${gameVersion}/${installSet.id}.txt")
+				def smokeLogFile = layout.buildDirectory.file("smoke-logs/${profileId}/${gameVersion}/${installSet.id}.log")
+				def smokeOutput = new ByteArrayOutputStream()
 				def runArguments = [
 						gradleWrapperExecutable,
-						':smokelaunch:runClient',
+						installSet.launchTask,
 						"-Pminecraft_version_profile=${gameVersion}",
 						'-Plifetimestattracker_smoke_test=true',
 						"-Plifetimestattracker_smoke_release_profile=${profileId}",
@@ -581,11 +598,14 @@ def registerSmokeTasks = { List<String> profiles, String taskPrefix, String buil
 					description = "Launches Minecraft ${gameVersion} with ${installSet.description} from profile ${profileId}."
 					dependsOn tasks.named(buildTaskName)
 
-					if (useSmokeTestXvfb) {
+					if (useSmokeTestXvfb && installSet.requiresXvfb) {
 						commandLine((['xvfb-run', '-a'] + runArguments) as String[])
 					} else {
 						commandLine(runArguments as String[])
 					}
+					standardOutput = smokeOutput
+					errorOutput = smokeOutput
+					ignoreExitValue = true
 
 					doFirst {
 						def releaseDir = releaseJarDirectory.get().asFile
@@ -597,6 +617,22 @@ def registerSmokeTasks = { List<String> profiles, String taskPrefix, String buil
 						def modList = modListFile.get().asFile
 						modList.parentFile.mkdirs()
 						modList.text = releaseJar.absolutePath + System.lineSeparator()
+					}
+
+					doLast {
+						def outputText = smokeOutput.toString('UTF-8')
+						def logFile = smokeLogFile.get().asFile
+						logFile.parentFile.mkdirs()
+						logFile.text = outputText
+						print outputText
+
+						def exitValue = executionResult.get().exitValue
+						if (exitValue != 0) {
+							throw new GradleException("Smoke test ${taskName} failed with exit code ${exitValue}. Log: ${logFile}")
+						}
+						if (!outputText.contains(installSet.passMarker)) {
+							throw new GradleException("Smoke test ${taskName} did not print ${installSet.passMarker}. Log: ${logFile}")
+						}
 					}
 				}
 
@@ -619,47 +655,146 @@ def supportedSmokeTasks = registerSmokeTasks(
 		supportedMinecraftVersionProfiles,
 		'smokeSupportedMinecraft',
 		'buildMinecraft',
-		false
+		false,
+		smokeInstallSets
+)
+
+def supportedClientSmokeTasks = registerSmokeTasks(
+		supportedMinecraftVersionProfiles,
+		'smokeSupportedClientMinecraft',
+		'buildMinecraft',
+		false,
+		clientSmokeInstallSets
+)
+
+def supportedServerSmokeTasks = registerSmokeTasks(
+		supportedMinecraftVersionProfiles,
+		'smokeSupportedServerMinecraft',
+		'buildMinecraft',
+		false,
+		serverSmokeInstallSets
 )
 
 def validationSmokeTasks = registerSmokeTasks(
 		validationMinecraftVersionProfiles,
 		'smokeValidationMinecraft',
 		'validateMinecraft',
-		false
+		false,
+		smokeInstallSets
+)
+
+def validationClientSmokeTasks = registerSmokeTasks(
+		validationMinecraftVersionProfiles,
+		'smokeValidationClientMinecraft',
+		'validateMinecraft',
+		false,
+		clientSmokeInstallSets
+)
+
+def validationServerSmokeTasks = registerSmokeTasks(
+		validationMinecraftVersionProfiles,
+		'smokeValidationServerMinecraft',
+		'validateMinecraft',
+		false,
+		serverSmokeInstallSets
 )
 
 def selectedSmokeTasks = registerSmokeTasks(
 		validationMinecraftVersionProfiles,
 		'smokeSelectedMinecraft',
 		'validateMinecraft',
-		true
+		true,
+		smokeInstallSets
+)
+
+def selectedClientSmokeTasks = registerSmokeTasks(
+		validationMinecraftVersionProfiles,
+		'smokeSelectedClientMinecraft',
+		'validateMinecraft',
+		true,
+		clientSmokeInstallSets
+)
+
+def selectedServerSmokeTasks = registerSmokeTasks(
+		validationMinecraftVersionProfiles,
+		'smokeSelectedServerMinecraft',
+		'validateMinecraft',
+		true,
+		serverSmokeInstallSets
 )
 
 tasks.register('smokeTestValidationClients') {
 	group = 'verification'
-	description = 'Launches exact Minecraft runtimes with the packaged release jar for each validation profile/game version.'
+	description = 'Launches exact Minecraft clients with the packaged release jar for each validation profile/game version.'
+	dependsOn validationClientSmokeTasks
+}
+
+tasks.register('smokeTestValidationServers') {
+	group = 'verification'
+	description = 'Launches exact dedicated Minecraft servers with the packaged release jar for each validation profile/game version.'
+	dependsOn validationServerSmokeTasks
+}
+
+tasks.register('smokeTestValidation') {
+	group = 'verification'
+	description = 'Launches exact Minecraft clients and dedicated servers with the packaged release jar for each validation profile/game version.'
 	dependsOn validationSmokeTasks
 }
 
 tasks.register('smokeTestSupportedClients') {
 	group = 'verification'
-	description = 'Launches exact Minecraft runtimes with the packaged release jar for supported profiles only.'
+	description = 'Launches exact Minecraft clients with the packaged release jar for supported profiles only.'
+	dependsOn supportedClientSmokeTasks
+}
+
+tasks.register('smokeTestSupportedServers') {
+	group = 'verification'
+	description = 'Launches exact dedicated Minecraft servers with the packaged release jar for supported profiles only.'
+	dependsOn supportedServerSmokeTasks
+}
+
+tasks.register('smokeTestSupported') {
+	group = 'verification'
+	description = 'Launches exact Minecraft clients and dedicated servers with the packaged release jar for supported profiles only.'
 	dependsOn supportedSmokeTasks
+}
+
+def validateSelectedSmokeTasks = { List smokeTasks, String scope ->
+	if (!selectedSmokeFiltersConfigured) {
+		throw new GradleException("Set at least one of -Plifetimestattracker_smoke_profiles, -Plifetimestattracker_smoke_game_versions, or -Plifetimestattracker_smoke_install_sets before running ${scope}.")
+	}
+	if (smokeTasks.isEmpty()) {
+		throw new GradleException("Selected smoke filters did not match any ${scope} task.")
+	}
 }
 
 tasks.register('smokeTestSelectedClients') {
 	group = 'verification'
 	description = 'Launches a filtered subset of client smoke tests selected by lifetimestattracker_smoke_* properties.'
+	dependsOn selectedClientSmokeTasks
+
+	doFirst {
+		validateSelectedSmokeTasks(selectedClientSmokeTasks, 'smokeTestSelectedClients')
+	}
+}
+
+tasks.register('smokeTestSelectedServers') {
+	group = 'verification'
+	description = 'Launches a filtered subset of server smoke tests selected by lifetimestattracker_smoke_* properties.'
+	dependsOn selectedServerSmokeTasks
+
+	doFirst {
+		validateSelectedSmokeTasks(selectedServerSmokeTasks, 'smokeTestSelectedServers')
+	}
+}
+
+tasks.register('smokeTestSelected') {
+	group = 'verification'
+	description = 'Launches a filtered subset of client and server smoke tests selected by lifetimestattracker_smoke_* properties.'
 	dependsOn selectedSmokeTasks
 
 	doFirst {
-		if (!selectedSmokeFiltersConfigured) {
-			throw new GradleException("Set at least one of -Plifetimestattracker_smoke_profiles, -Plifetimestattracker_smoke_game_versions, or -Plifetimestattracker_smoke_install_sets before running smokeTestSelectedClients.")
-		}
-		if (selectedSmokeTasks.isEmpty()) {
-			throw new GradleException("Selected smoke filters did not match any profile/game version/install set.")
-		}
+		validateSelectedSmokeTasks(selectedSmokeTasks, 'smokeTestSelected')
 	}
 }
 
@@ -667,7 +802,7 @@ tasks.register('ciValidation') {
 	group = 'verification'
 	description = 'Runs CI validation across supported and candidate version profiles.'
 	dependsOn tasks.named('buildValidationVersions')
-	dependsOn tasks.named('smokeTestValidationClients')
+	dependsOn tasks.named('smokeTestValidation')
 	dependsOn tasks.named('verifySmokeTestMatrix')
 }
 
@@ -675,7 +810,7 @@ tasks.register('publishValidation') {
 	group = 'verification'
 	description = 'Builds and smoke-tests supported profiles only before Modrinth publishing.'
 	dependsOn tasks.named('buildAllVersions')
-	dependsOn tasks.named('smokeTestSupportedClients')
+	dependsOn tasks.named('smokeTestSupported')
 	dependsOn tasks.named('verifySmokeTestMatrix')
 }
 

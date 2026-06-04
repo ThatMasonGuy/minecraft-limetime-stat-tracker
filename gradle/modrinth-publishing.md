@@ -34,7 +34,8 @@ version entries unique, such as:
 .\gradlew.bat publishModrinth -Pmodrinth_confirm_publish=true
 ```
 
-- `publishValidation` builds and smoke-tests supported profiles only.
+- `publishValidation` builds and smoke-tests supported profiles only, including
+  both client launch smoke and dedicated-server smoke.
 - `prepareModrinthUploads` runs validation, verifies upload metadata, and writes
   `build/modrinth/upload-plan.json`.
 - `publishModrinthDryRun` performs the full validation path without
@@ -82,9 +83,10 @@ Inputs:
 - `version_type`: `release`, `beta`, or `alpha`.
 - `requested_status`: `listed`, `unlisted`, or `draft`.
 
-The workflow installs `xvfb`, runs the supported-profile smoke launcher under a
-virtual display, and captures `build/modrinth/upload-plan.json` plus
-`build/release/` as artifacts.
+The workflow installs `xvfb`, runs supported-profile client smoke under a
+virtual display, runs dedicated-server smoke without `xvfb`, and captures
+`build/modrinth/upload-plan.json`, `build/release/`, `build/smoke-logs/`,
+`build/smoke-mod-lists/`, and `build/smoke-run/` as artifacts.
 
 ## Git Tags And GitHub Releases
 

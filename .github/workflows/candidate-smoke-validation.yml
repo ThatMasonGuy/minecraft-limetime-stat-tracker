@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: ''
+      smoke_install_sets:
+        description: 'Optional comma-separated install set filter'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   smoke:
@@ -53,18 +58,22 @@ jobs:
         env:
           SMOKE_PROFILES: ${{ inputs.smoke_profiles }}
           SMOKE_GAME_VERSIONS: ${{ inputs.smoke_game_versions }}
+          SMOKE_INSTALL_SETS: ${{ inputs.smoke_install_sets }}
         run: |
           set -euo pipefail
-          if [ -n "$SMOKE_PROFILES" ] || [ -n "$SMOKE_GAME_VERSIONS" ]; then
-            args=(smokeTestSelectedClients -Plifetimestattracker_smoke_xvfb=true)
+          if [ -n "$SMOKE_PROFILES" ] || [ -n "$SMOKE_GAME_VERSIONS" ] || [ -n "$SMOKE_INSTALL_SETS" ]; then
+            args=(smokeTestSelected -Plifetimestattracker_smoke_xvfb=true)
             if [ -n "$SMOKE_PROFILES" ]; then
               args+=("-Plifetimestattracker_smoke_profiles=$SMOKE_PROFILES")
             fi
             if [ -n "$SMOKE_GAME_VERSIONS" ]; then
               args+=("-Plifetimestattracker_smoke_game_versions=$SMOKE_GAME_VERSIONS")
             fi
+            if [ -n "$SMOKE_INSTALL_SETS" ]; then
+              args+=("-Plifetimestattracker_smoke_install_sets=$SMOKE_INSTALL_SETS")
+            fi
           else
-            args=(smokeTestValidationClients -Plifetimestattracker_smoke_xvfb=true)
+            args=(smokeTestValidation -Plifetimestattracker_smoke_xvfb=true)
           fi
           ./gradlew "${args[@]}" --no-daemon --console=plain
       - name: capture smoke artifacts
@@ -74,6 +83,8 @@ jobs:
           name: Candidate Smoke Artifacts
           path: |
             build/release/
+            build/smoke-logs/
             build/smoke-mod-lists/
+            build/smoke-run/
             build/reports/
             modules/*/build/reports/

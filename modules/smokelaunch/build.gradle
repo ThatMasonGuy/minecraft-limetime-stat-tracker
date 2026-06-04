@@ -4,8 +4,27 @@ base {
 	archivesName = 'lifetime-stat-tracker-smoke-launcher'
 }
 
+def smokeTestEnabled = (rootProject.findProperty('lifetimestattracker_smoke_test') ?: 'false').toString().toBoolean()
+def smokeInstallSet = rootProject.findProperty('lifetimestattracker_smoke_install_set')
+def smokeRunId = smokeInstallSet != null && !smokeInstallSet.toString().isBlank()
+		? smokeInstallSet.toString()
+		: 'default'
+def smokeWorkingDir = rootProject.layout.buildDirectory.dir("smoke-run/${rootProject.minecraft_version_profile}/${project.name}/${smokeRunId}").get().asFile
+def smokeRunDir = projectDir.toPath().relativize(smokeWorkingDir.toPath()).toString()
+
 loom {
 	splitEnvironmentSourceSets()
+
+	if (smokeTestEnabled) {
+		runs {
+			client {
+				runDir smokeRunDir
+			}
+			server {
+				runDir smokeRunDir
+			}
+		}
+	}
 }
 
 sourceSets {
@@ -37,13 +56,16 @@ tasks.withType(JavaExec).configureEach {
 		languageVersion = JavaLanguageVersion.of(rootProject.target_java_version)
 	}
 	jvmArgs('-Xmx2G')
+	def launchTaskName = name
+	def serverLaunch = launchTaskName.toLowerCase(Locale.ROOT).contains('server')
+	def clientLaunch = launchTaskName.toLowerCase(Locale.ROOT).contains('client')
 
 	def smokeMods = rootProject.findProperty('lifetimestattracker_smoke_mods')
 	if (smokeMods != null && !smokeMods.toString().isBlank()) {
 		jvmArgs("-Dfabric.addMods=${smokeMods}")
 	}
 
-	if ((rootProject.findProperty('lifetimestattracker_smoke_test') ?: 'false').toString().toBoolean()) {
+	if (smokeTestEnabled) {
 		jvmArgs('-Dlifetimestattracker.smokeTest=true')
 		jvmArgs("-Dlifetimestattracker.smokeMinecraftProfile=${rootProject.minecraft_version_profile}")
 		jvmArgs("-Dlifetimestattracker.smokeGameVersion=${rootProject.minecraft_version}")
@@ -53,19 +75,36 @@ tasks.withType(JavaExec).configureEach {
 			jvmArgs("-Dlifetimestattracker.smokeReleaseProfile=${smokeReleaseProfile}")
 		}
 
-		def smokeInstallSet = rootProject.findProperty('lifetimestattracker_smoke_install_set')
 		if (smokeInstallSet != null && !smokeInstallSet.toString().isBlank()) {
 			jvmArgs("-Dlifetimestattracker.smokeInstallSet=${smokeInstallSet}")
 		}
 
-		args('--width', '854', '--height', '480')
-		def smokeRunId = smokeInstallSet != null && !smokeInstallSet.toString().isBlank()
-				? smokeInstallSet.toString()
-				: 'default'
-		def smokeWorkingDir = rootProject.layout.buildDirectory.dir("smoke-run/${rootProject.minecraft_version_profile}/${project.name}/${smokeRunId}").get().asFile
+		if (clientLaunch) {
+			args('--width', '854', '--height', '480')
+		}
+		if (serverLaunch) {
+			args('nogui')
+		}
 		workingDir smokeWorkingDir
 		doFirst {
 			smokeWorkingDir.mkdirs()
+			if (serverLaunch) {
+				new File(smokeWorkingDir, 'eula.txt').text = 'eula=true' + System.lineSeparator()
+				new File(smokeWorkingDir, 'server.properties').text = [
+						'allow-flight=true',
+						'enable-command-block=false',
+						'enable-query=false',
+						'enable-rcon=false',
+						'level-name=LifetimeStatTrackerSmokeWorld',
+						'max-players=1',
+						'motd=Lifetime Stat Tracker Smoke Test',
+						'online-mode=false',
+						'server-port=0',
+						'simulation-distance=2',
+						'spawn-protection=0',
+						'view-distance=2'
+				].join(System.lineSeparator()) + System.lineSeparator()
+			}
 			workingDir smokeWorkingDir
 		}
 	}

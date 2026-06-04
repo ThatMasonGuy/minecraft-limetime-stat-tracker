@@ -38,6 +38,7 @@ public class LifetimeStatTracker implements DedicatedServerModInitializer {
 
         ServerTickEvents.END_SERVER_TICK.register(this::sendScheduledIdentities);
         CommandRegistrationCallback.EVENT.register(this::registerCommands);
+        LifetimeStatTrackerServerSmokeTest.registerIfEnabled();
     }
 
     private void registerCommands(
@@ -107,6 +108,18 @@ public class LifetimeStatTracker implements DedicatedServerModInitializer {
         IdValue id = currentWorldId(server);
         IdValue name = currentWorldName(server);
         return new IdentityInfo(id.value(), name.value(), id.source(), name.source());
+    }
+
+    static String smokeWorldIdentitySummary(MinecraftServer server) {
+        IdentityInfo identity = currentWorldIdentity(server);
+        if (identity.worldId().isBlank() || identity.displayName().isBlank()) {
+            throw new IllegalStateException("Server smoke test resolved a blank world identity.");
+        }
+        return "worldId=" + identity.worldId()
+                + " displayName=" + identity.displayName()
+                + " idSource=" + identity.idSource()
+                + " nameSource=" + identity.nameSource()
+                + " protocol=" + LifetimeStatTrackerNetworking.PROTOCOL_VERSION;
     }
 
     private static IdValue currentWorldId(MinecraftServer server) {

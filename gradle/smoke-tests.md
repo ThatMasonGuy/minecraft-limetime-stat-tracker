@@ -1,7 +1,8 @@
 # Smoke Test Matrix
 
-`gradle/smoke-tests.json` records client launch smoke-test status for each
-release compatibility profile.
+`gradle/smoke-tests.json` records historical client launch smoke-test status for
+each release compatibility profile. Live validation now also runs a dedicated
+server smoke install set before CI validation or publishing can pass.
 
 Status meanings:
 
@@ -29,9 +30,14 @@ GitHub Actions candidate smoke run `26934205756` passed every listed exact
 runtime except `26.2-pre-3`. After the Fabric Loader prerelease dependency
 metadata fix, focused run `26935246770` passed `26.2-pre-3`.
 
-Each pass used install set `lifetime-stat-tracker-client-only`, reached the
-client tick loop, force-loaded `ClientPacketListener` and `ClientAdvancements`,
-printed `LIFETIMESTATTRACKER_SMOKE_TEST_PASS`, and exited cleanly.
+Each recorded pass used install set `lifetime-stat-tracker-client-only`, reached
+the client tick loop, force-loaded `ClientPacketListener` and
+`ClientAdvancements`, printed `LIFETIMESTATTRACKER_SMOKE_TEST_PASS`, and exited
+cleanly.
+
+Dedicated server smoke coverage is not backfilled into the historical matrix
+yet. It is a live Gradle gate: `ciValidation` and `publishValidation` now run
+the server launch tasks as well as the client launch tasks.
 
 There are currently no candidate release profiles. New candidates should be
 tracked in `gradle/smoke-tests.json` as `pending` until every exact Minecraft
@@ -66,12 +72,26 @@ The current smoke hook force-loads these mixin target classes:
 - `net.minecraft.client.multiplayer.ClientPacketListener`
 - `net.minecraft.client.multiplayer.ClientAdvancements`
 
+Each automated dedicated server smoke launch must:
+
+- install the packaged release jar
+- launch the exact dedicated Minecraft server runtime
+- use an isolated smoke run directory with accepted EULA and low-cost
+  `server.properties`
+- reach the server tick loop
+- verify `/lstserver` is registered
+- resolve the advertised world identity through the server identity code path
+- log `LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS`
+- exit cleanly
+
 ## Smoke Coverage
 
-Current install set:
+Current install sets:
 
 - `lifetime-stat-tracker-client-only`: client jar installed in the client mods
   folder, no server-side jar.
+- `lifetime-stat-tracker-server-only`: jar installed on a dedicated Fabric
+  server, no client connection.
 
 Later optional install set:
 
@@ -83,30 +103,47 @@ Mixin target method names, Mixin compatibility level, Fabric client commands,
 stat request packet availability, Fabric networking registration, and JSON
 initialization.
 
+The server-only smoke test covers the optional server component: server
+entrypoint loading, server payload registration, `/lstserver` registration,
+server path/world identity reflection, EULA-safe dedicated launch, and clean
+shutdown. It does not yet prove a full client-to-dedicated-server identity
+handshake.
+
 ## Commands
 
 ```powershell
 .\gradlew.bat verifySmokeTestMatrix
 .\gradlew.bat smokeTestSupportedClients
+.\gradlew.bat smokeTestSupportedServers
+.\gradlew.bat smokeTestSupported
 .\gradlew.bat publishValidation
 .\gradlew.bat buildValidationVersions
 .\gradlew.bat smokeTestValidationClients
+.\gradlew.bat smokeTestValidationServers
+.\gradlew.bat smokeTestValidation
 .\gradlew.bat ciValidation
 ```
 
-For focused local checks, use `smokeTestSelectedClients` with one or more
+For focused local checks, use `smokeTestSelectedClients`,
+`smokeTestSelectedServers`, or aggregate `smokeTestSelected` with one or more
 filters:
 
 ```powershell
 .\gradlew.bat smokeTestSelectedClients "-Plifetimestattracker_smoke_profiles=1.20.5-1.21.10" "-Plifetimestattracker_smoke_game_versions=1.21.10"
+.\gradlew.bat smokeTestSelectedServers "-Plifetimestattracker_smoke_profiles=1.21.11" "-Plifetimestattracker_smoke_game_versions=1.21.11"
+.\gradlew.bat smokeTestSelected "-Plifetimestattracker_smoke_profiles=1.21.11" "-Plifetimestattracker_smoke_game_versions=1.21.11" "-Plifetimestattracker_smoke_install_sets=lifetime-stat-tracker-server-only"
 ```
 
 Accepted install set ids are currently:
 
 - `lifetime-stat-tracker-client-only`
+- `lifetime-stat-tracker-server-only`
 
 Nested smoke Gradle launches use `--no-daemon` by default. For local timing
 experiments, pass `-Plifetimestattracker_smoke_nested_no_daemon=false`.
+
+Smoke logs are written under `build/smoke-logs/<profile>/<game_version>/<install_set>.log`.
+Run directories are isolated under `build/smoke-run/`.
 
 For Linux/headless CI:
 
@@ -117,6 +154,7 @@ For Linux/headless CI:
 ## Promotion Rule
 
 After a candidate profile passes client smoke testing on every version in
-`modrinth_game_versions`, update its records to `pass`. To make that profile
-publishable, move it from `candidate_minecraft_version_profiles` to
-`supported_minecraft_version_profiles`, then run the full release validation.
+`modrinth_game_versions`, update its matrix records to `pass`. To make that
+profile publishable, move it from `candidate_minecraft_version_profiles` to
+`supported_minecraft_version_profiles`, then run the full release validation,
+including live dedicated-server smoke coverage.

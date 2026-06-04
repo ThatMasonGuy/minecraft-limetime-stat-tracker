@@ -49,6 +49,17 @@ All notable project changes will be documented here.
   - Exact smoke runtime profiles cover every Minecraft version listed by the
     current supported and candidate release profiles without adding extra
     publishable release artifacts.
+- Added dedicated-server packaged-jar smoke testing:
+  - `LifetimeStatTrackerServerSmokeTest` launches only when the smoke-test
+    system property is set, waits for the server tick loop, verifies
+    `/lstserver` command registration, resolves the server world identity path,
+    prints `LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS`, and stops the server.
+  - Added `lifetime-stat-tracker-server-only`, `smokeTestSupportedServers`,
+    `smokeTestValidationServers`, `smokeTestSelectedServers`, and aggregate
+    `smokeTestSupported`, `smokeTestValidation`, and `smokeTestSelected` task
+    roots.
+  - Smoke tasks now capture `build/smoke-logs/` and require the expected pass
+    marker instead of trusting process exit alone.
 - Added guarded Modrinth publishing automation:
   - `prepareModrinthUploads` writes `build/modrinth/upload-plan.json`.
   - `publishModrinthDryRun` runs the full supported-profile build, smoke, and
@@ -120,6 +131,9 @@ All notable project changes will be documented here.
   tags and one GitHub Release per mod version after successful Modrinth publish.
 - Backfilled the `v2.7.0` release checkpoint to the all-profile publish commit
   from GitHub Actions run `26935626612`.
+- Wired `ciValidation`, `publishValidation`, the manual candidate smoke workflow,
+  and the Modrinth publish workflow artifact capture through the aggregate
+  client-plus-server smoke gates.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.
