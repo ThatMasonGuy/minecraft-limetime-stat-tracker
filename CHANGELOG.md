@@ -101,6 +101,12 @@ All notable project changes will be documented here.
   packaged-jar client smoke record.
 - Updated the user-facing README and `gradle/release-notes/2.7.0.md` for the
   full `1.20` through `26.2-pre-3` compatibility-group release.
+- Published the promoted `2.7.0+mc...` compatibility-group Modrinth versions
+  through GitHub Actions run `26935626612`:
+  - `2.7.0+mc1.20-1.20.4` as Modrinth version `Jt9tTBaY`.
+  - `2.7.0+mc1.20.5-1.21.10` as Modrinth version `W2Sk9t0L`.
+  - `2.7.0+mc1.21.11` as Modrinth version `PErEJCCl`.
+  - `2.7.0+mc26.1-26.2-pre-3` as Modrinth version `ZUmFCvMh`.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.

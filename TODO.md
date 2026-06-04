@@ -1,8 +1,8 @@
 # Lifetime Stat Tracker TODO
 
 Current checkpoint: GitHub Actions published `2.7.0` for supported `1.21.11` to
-Modrinth version `s24DbwkA`; all compatibility-group profiles now have GitHub
-smoke proof and are promoted for the all-profile Modrinth publish.
+Modrinth version `s24DbwkA`, then published the promoted compatibility-group
+release entries for Minecraft `1.20` through `26.2-pre-3`.
 
 ## Project Workflow
 
@@ -172,6 +172,19 @@ smoke proof and are promoted for the all-profile Modrinth publish.
    - Updated `README.md`, `COMPATIBILITY.md`, `gradle/version-profiles/README.md`,
      `gradle/smoke-tests.md`, and `gradle/release-notes/2.7.0.md` for the
      supported `1.20` through `26.2-pre-3` release shape.
+11. All-profile Modrinth publish:
+   - Ran GitHub Actions `modrinth publish` run `26935626612` from commit
+     `30fb089` with `dry_run=false`, `version_type=release`, and
+     `requested_status=listed`.
+   - The workflow repeated packaged client-only smoke launches for every exact
+     Minecraft runtime listed by the four supported profiles before uploading.
+   - Published the compatibility-group Modrinth versions:
+     - `2.7.0+mc1.20-1.20.4` as version `Jt9tTBaY`.
+     - `2.7.0+mc1.20.5-1.21.10` as version `W2Sk9t0L`.
+     - `2.7.0+mc1.21.11` as version `PErEJCCl`.
+     - `2.7.0+mc26.1-26.2-pre-3` as version `ZUmFCvMh`.
+   - The earlier unsuffixed `2.7.0` publish for `1.21.11` remains Modrinth
+     version `s24DbwkA`.
 
 ## Current Compatibility Conclusion
 
@@ -309,16 +322,17 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Use `gradle/release-notes/<mod_version>.md` for Modrinth changelogs.
    - Current status: project id `rJCvFZKh` is recorded, GitHub repository
      secret `MODRINTH_TOKEN` is expected, Fabric API dependency id `P7dR8mSH`
-     is recorded, guarded upload/dry-run tasks exist, and GitHub smoke proof is
-     in place for every supported profile.
+     is recorded, guarded upload/dry-run tasks exist, GitHub smoke proof is in
+     place for every supported profile, and the first all-profile publish is
+     complete.
 10. Release promotion:
    - Keep new groups in `candidate_minecraft_version_profiles` until compile and
      smoke testing pass.
    - Promote only smoke-passed groups into `supported_minecraft_version_profiles`.
    - Run the guarded publish workflow when release approval is given.
-   - Current status: first supported `1.21.11` guarded publish is complete.
-     All four release profiles are promoted and ready for the guarded all-profile
-     Modrinth publish workflow.
+   - Current status: first supported `1.21.11` guarded publish is complete, all
+     four release profiles are promoted, and the guarded all-profile Modrinth
+     publish workflow has uploaded the `2.7.0+mc...` compatibility entries.
 
 ## Compatibility Risk Surfaces
 
