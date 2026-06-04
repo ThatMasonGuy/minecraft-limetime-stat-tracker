@@ -8,10 +8,11 @@ auditing this mod's own API surface.
 
 ## Executive Recommendation
 
-Align candidate release profiles with source compatibility groups by default.
-Only split a candidate away from its compat group when one compiled jar cannot
-honestly cover the runtime dependency metadata, binary compatibility, or smoke
-test matrix.
+The goal is the fewest unique build artifacts that can honestly support the
+targeted Minecraft range. Align candidate release profiles with source
+compatibility groups by default. Split a candidate only when one compiled jar
+literally cannot cover the combined runtime dependency metadata, binary
+compatibility, or smoke-test matrix.
 
 Recommended initial candidate profiles:
 

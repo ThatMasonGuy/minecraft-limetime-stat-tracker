@@ -37,6 +37,9 @@ All notable project changes will be documented here.
   compatibility groups by default, splitting only when compile probes, runtime
   checks, dependency metadata, or smoke tests prove a broader jar cannot be
   published honestly.
+- Clarified the core compatibility principle: prefer the fewest unique build
+  artifacts possible, and split builds only when one jar cannot cover the
+  combined range.
 
 ## 2.1.0 Current Baseline
 

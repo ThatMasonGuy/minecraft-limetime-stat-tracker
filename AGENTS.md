@@ -98,6 +98,10 @@ Examples of major boundaries for this project:
   migration is added and documented.
 - Treat Minecraft version profiles as release compatibility groups, not
   necessarily one profile per exact patch version.
+- Prefer the fewest unique build artifacts possible. Split release profiles or
+  source compat groups only when one jar literally cannot cover the combined
+  range because of compatibility requirements, dependency metadata, binary
+  runtime behavior, or smoke-test failure.
 - A profile should compile one jar from one anchor Minecraft version, list every
   Minecraft version that exact jar has passed smoke testing on, and publish only
   those tested game versions to Modrinth.

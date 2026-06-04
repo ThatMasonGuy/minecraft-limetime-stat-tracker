@@ -11,8 +11,11 @@ compatibility group compiles against one anchor Minecraft version, then only
 claims the exact Minecraft versions that same jar has passed launcher smoke
 testing on.
 
-This keeps publishing honest while avoiding duplicate builds for patch versions
-that share the same API shape.
+The default design constraint is the fewest unique build artifacts possible.
+Split builds only when one jar literally cannot cover the combined Minecraft
+range because of source compatibility, dependency metadata, binary runtime
+behavior, or smoke-test evidence. This keeps publishing honest while avoiding
+duplicate builds for patch versions that share the same API shape.
 
 ## What Is Simpler Here
 

@@ -31,6 +31,8 @@ Release profiles should align with these source groups by default. Split a
 release profile away from its source group only when compile probes, binary
 runtime checks, dependency metadata, or smoke tests prove that one jar cannot
 honestly cover the proposed range.
+The target is the fewest unique builds possible; compatibility overlays exist
+only for API shapes that cannot share source.
 
 Recommended package ownership:
 

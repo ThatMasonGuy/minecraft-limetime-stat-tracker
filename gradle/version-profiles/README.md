@@ -30,6 +30,8 @@ metadata, and passes launcher smoke tests for every listed game version.
 Candidate profiles should start aligned with source compatibility groups. Split
 a profile only after compile probes, binary runtime checks, dependency metadata,
 or smoke tests prove that one jar cannot honestly cover the proposed range.
+Prefer the fewest unique build artifacts possible; do not add separate builds
+for patch ranges that can share one compatible jar.
 
 ## Planned Profile Fields
 

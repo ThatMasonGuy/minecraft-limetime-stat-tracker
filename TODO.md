@@ -75,8 +75,9 @@ Current checkpoint: Compatibility drift map complete; profile foundation is next
 ## Current Compatibility Conclusion
 
 The drift audit is good news for this mod: the compatibility surface is narrow
-enough that candidate release profiles should align with source overlays by
-default, with splits added only when evidence forces them.
+enough that we should target the fewest unique build artifacts possible.
+Candidate release profiles should align with source overlays by default, with
+splits added only when one jar literally cannot support the combined range.
 
 Use this initial map for the profile implementation:
 
@@ -89,9 +90,10 @@ Use this initial map for the profile implementation:
 - Release profile `26.1-26.2-pre-3` uses source compat group `26.x`.
 
 Do not over-split by copying Inventory Sort's GUI-driven groups unless compile
-probes, binary runtime checks, or dependency metadata show a real Lifetime Stat
-Tracker break. The first implementation pass should add the profile system, then
-the adapter layer, then compile probes for the groups above.
+probes, binary runtime checks, dependency metadata, or smoke tests show a real
+Lifetime Stat Tracker break that prevents one jar from covering the combined
+range. The first implementation pass should add the profile system, then the
+adapter layer, then compile probes for the groups above.
 
 ## Migration Goal
 
