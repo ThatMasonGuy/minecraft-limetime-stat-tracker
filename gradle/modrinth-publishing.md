@@ -1,15 +1,17 @@
 # Modrinth Publishing
 
-Modrinth publishing is not implemented in this repo yet. This file captures the
-rules the future pipeline should follow.
+Modrinth publishing is implemented through guarded Gradle tasks and a manual
+GitHub Actions workflow.
 
 ## Publishing Model
 
-Publishing should be driven by supported Minecraft version profiles only.
+Publishing is driven by supported Minecraft version profiles only.
 Profiles in `candidate_minecraft_version_profiles` must be ignored until they
 are promoted to `supported_minecraft_version_profiles`.
 
 Modrinth project id: `rJCvFZKh`.
+
+Fabric API dependency project id: `P7dR8mSH`.
 
 When only one supported profile exists, Modrinth `version_number` can be the mod
 version, such as `2.1.0`.
@@ -23,9 +25,7 @@ version entries unique, such as:
 2.2.0+mc1.20-1.20.4
 ```
 
-## Planned Tasks
-
-These tasks are intended names and may change during implementation:
+## Gradle Tasks
 
 ```powershell
 .\gradlew.bat publishValidation
@@ -34,13 +34,22 @@ These tasks are intended names and may change during implementation:
 .\gradlew.bat publishModrinth -Pmodrinth_confirm_publish=true
 ```
 
-- `publishValidation` should build and smoke-test supported profiles only.
-- `prepareModrinthUploads` should run validation, verify upload metadata, and
-  write an upload plan.
-- `publishModrinthDryRun` should perform the full validation path without
+- `publishValidation` builds and smoke-tests supported profiles only.
+- `prepareModrinthUploads` runs validation, verifies upload metadata, and writes
+  `build/modrinth/upload-plan.json`.
+- `publishModrinthDryRun` performs the full validation path without
   calling the Modrinth API.
-- `publishModrinth` should perform the real upload and require an explicit
-  confirmation property.
+- `publishModrinth` performs the real upload and requires
+  `-Pmodrinth_confirm_publish=true`.
+
+The upload plan includes:
+
+- project id `rJCvFZKh`
+- loader `fabric`
+- exact game versions from the supported profile's `modrinth_game_versions`
+- required Fabric API dependency `P7dR8mSH`
+- release notes from `gradle/release-notes/<mod_version>.md`
+- the packaged jar from `build/release/<profile_id>/`
 
 ## Secrets
 
@@ -61,6 +70,21 @@ modrinth_token=...
 Do not store tokens in this repository.
 
 GitHub publishing should read the repository secret named `MODRINTH_TOKEN`.
+
+## GitHub Workflow
+
+Use the manual `modrinth publish` workflow in `.github/workflows/`.
+
+Inputs:
+
+- `dry_run`: keep this enabled to validate and print the upload plan without
+  publishing.
+- `version_type`: `release`, `beta`, or `alpha`.
+- `requested_status`: `listed`, `unlisted`, or `draft`.
+
+The workflow installs `xvfb`, runs the supported-profile smoke launcher under a
+virtual display, and captures `build/modrinth/upload-plan.json` plus
+`build/release/` as artifacts.
 
 ## Release Notes
 

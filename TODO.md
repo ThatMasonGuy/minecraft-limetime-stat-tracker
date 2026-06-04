@@ -1,8 +1,7 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: Automated packaged-jar client smoke testing is implemented
-for the supported profile, with candidate exact-runtime smoke records tracked as
-pending
+Current checkpoint: Guarded Modrinth dry-run and publish automation is
+implemented for the supported `1.21.11` profile
 
 ## Project Workflow
 
@@ -131,6 +130,15 @@ pending
      `smokeTestValidationClients`, `publishValidation`, and `ciValidation`.
    - Verified `.\gradlew.bat smokeTestSupportedClients --no-daemon --console=plain`
      for supported `1.21.11`; candidate rows remain `pending`.
+8. Modrinth publishing automation:
+   - Added `prepareModrinthUploads`, `publishModrinthDryRun`, and
+     `publishModrinth`.
+   - Added `.github/workflows/modrinth-publish.yml`, using the repository
+     secret `MODRINTH_TOKEN` for real uploads and `xvfb` for CI smoke launches.
+   - Added Modrinth release notes for `2.1.0`.
+   - Added Fabric API's Modrinth project id `P7dR8mSH` as a required upload
+     dependency.
+   - Verified `.\gradlew.bat publishModrinthDryRun --no-daemon --console=plain`.
 
 ## Current Compatibility Conclusion
 
@@ -267,15 +275,16 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Publish supported profiles only.
    - Use `gradle/release-notes/<mod_version>.md` for Modrinth changelogs.
    - Current status: project id `rJCvFZKh` is recorded, GitHub repository
-     secret `MODRINTH_TOKEN` is expected, and `publishValidation` now gates the
-     supported profile build plus smoke test; Modrinth upload/dry-run tasks
-     still TODO.
+     secret `MODRINTH_TOKEN` is expected, Fabric API dependency id `P7dR8mSH`
+     is recorded, guarded upload/dry-run tasks exist, and the local dry run has
+     passed for supported `1.21.11`.
 10. Release promotion:
    - Keep new groups in `candidate_minecraft_version_profiles` until compile and
      smoke testing pass.
    - Promote only smoke-passed groups into `supported_minecraft_version_profiles`.
    - Run the guarded publish workflow when release approval is given.
-   - Current status: TODO.
+   - Current status: ready for the first supported `1.21.11` manual workflow
+     dry run or guarded publish; broader candidate promotion remains TODO.
 
 ## Compatibility Risk Surfaces
 

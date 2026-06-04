@@ -49,6 +49,15 @@ All notable project changes will be documented here.
   - Exact smoke runtime profiles cover every Minecraft version listed by the
     current supported and candidate release profiles without adding extra
     publishable release artifacts.
+- Added guarded Modrinth publishing automation:
+  - `prepareModrinthUploads` writes `build/modrinth/upload-plan.json`.
+  - `publishModrinthDryRun` runs the full supported-profile build, smoke, and
+    upload-plan path without calling the Modrinth API.
+  - `publishModrinth` requires `-Pmodrinth_confirm_publish=true` and reads
+    `MODRINTH_TOKEN` or `-Pmodrinth_token`.
+  - `.github/workflows/modrinth-publish.yml` provides the manual dry-run or real
+    publish path using the repository `MODRINTH_TOKEN` secret.
+  - Added `gradle/release-notes/2.1.0.md` for the first Modrinth upload.
 
 ### Changed
 
@@ -67,6 +76,8 @@ All notable project changes will be documented here.
     dependency, and required client mixins.
 - Recorded Modrinth project id `rJCvFZKh` and documented the expected
   `MODRINTH_TOKEN` repository secret for future publishing automation.
+- Recorded Fabric API's Modrinth project id `P7dR8mSH` so upload plans declare
+  it as a required dependency.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.

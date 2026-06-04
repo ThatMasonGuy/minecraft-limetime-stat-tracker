@@ -72,8 +72,8 @@ unrelated user changes.
 - For this repo, smoke testing can be much simpler than Inventory Sort because
   there is one public mod jar. The important invariant is that the packaged jar
   launches on every exact Minecraft version listed in its profile metadata.
-- Real Modrinth uploads should go through the guarded GitHub workflow once it
-  exists unless the user explicitly asks for a local publish task.
+- Real Modrinth uploads should go through the guarded GitHub workflow unless the
+  user explicitly asks for a local publish task.
 
 ## Major Change Boundaries
 
