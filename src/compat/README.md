@@ -27,10 +27,10 @@ src/compat/1.21.11/
 src/compat/26.x/
 ```
 
-Release profiles may be more granular than source groups. For example,
-`1.20.5-1.20.6` and `1.21-1.21.10` can share source overlays if their compile
-probes pass, while `26.1-26.1.2` and `26.2-pre-3` should remain separate release
-profiles even if they both use `src/compat/26.x/`.
+Release profiles should align with these source groups by default. Split a
+release profile away from its source group only when compile probes, binary
+runtime checks, dependency metadata, or smoke tests prove that one jar cannot
+honestly cover the proposed range.
 
 Recommended package ownership:
 

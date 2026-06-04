@@ -33,6 +33,10 @@ All notable project changes will be documented here.
   evidence, and the next major step is the version-profile foundation.
 - Matched the checkpoint/commit guidance to Inventory Sort: each major change
   should update docs, verify, and commit before the next major step.
+- Corrected the profile plan so candidate release profiles align with source
+  compatibility groups by default, splitting only when compile probes, runtime
+  checks, dependency metadata, or smoke tests prove a broader jar cannot be
+  published honestly.
 
 ## 2.1.0 Current Baseline
 

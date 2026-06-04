@@ -75,23 +75,23 @@ Current checkpoint: Compatibility drift map complete; profile foundation is next
 ## Current Compatibility Conclusion
 
 The drift audit is good news for this mod: the compatibility surface is narrow
-enough that release profiles and source overlays do not need to be one-to-one.
+enough that candidate release profiles should align with source overlays by
+default, with splits added only when evidence forces them.
 
 Use this initial map for the profile implementation:
 
 - Release profile `1.20-1.20.4` uses source compat group `1.20-1.20.4`.
-- Release profiles `1.20.5-1.20.6` and `1.21-1.21.10` can start on source
-  compat group `1.20.5-1.21.10`.
+- Release profile `1.20.5-1.21.10` uses source compat group
+  `1.20.5-1.21.10`.
 - Release profile `1.21.11` stays separate until `Registry#getKey(...)` and
   advancement id extraction are descriptor-safe across `ResourceLocation` and
   `Identifier`.
-- Release profiles `26.1-26.1.2` and `26.2-pre-3` can start on shared source
-  compat group `26.x`.
+- Release profile `26.1-26.2-pre-3` uses source compat group `26.x`.
 
 Do not over-split by copying Inventory Sort's GUI-driven groups unless compile
-probes show a real Lifetime Stat Tracker break. The first implementation pass
-should add the profile system, then the adapter layer, then compile probes for
-the groups above.
+probes, binary runtime checks, or dependency metadata show a real Lifetime Stat
+Tracker break. The first implementation pass should add the profile system, then
+the adapter layer, then compile probes for the groups above.
 
 ## Migration Goal
 
@@ -111,9 +111,9 @@ These are starting source compatibility groups, not supported releases:
 | Source compat group | Release profiles using it | Java | Expected role |
 | --- | --- | ---: | --- |
 | `1.20-1.20.4` | `1.20-1.20.4` | 17 | Legacy stat packet accessor, legacy networking, no `RegistryFriendlyByteBuf`/`StreamCodec`; advancement key shape changes inside this range and needs a raw/reflection adapter. |
-| `1.20.5-1.21.10` | `1.20.5-1.20.6`, `1.21-1.21.10` | 21 | Modern typed payloads with `PayloadTypeRegistry.playS2C/playC2S`, `ClientCommandManager`, `ResourceLocation` registry descriptors, and a `File`/`Path` server-directory helper. |
+| `1.20.5-1.21.10` | `1.20.5-1.21.10` | 21 | Modern typed payloads with `PayloadTypeRegistry.playS2C/playC2S`, `ClientCommandManager`, `ResourceLocation` registry descriptors, and a `File`/`Path` server-directory helper. |
 | `1.21.11` | `1.21.11` | 21 | Same typed payload and command APIs as earlier `1.21.x`, but `Registry#getKey` and `AdvancementHolder#id` now return `Identifier`. May collapse after descriptor-safe helpers exist. |
-| `26.x` | `26.1-26.1.2`, `26.2-pre-3` | 25 | Java 25/non-remap lane with `ClientCommands` and `PayloadTypeRegistry.clientboundPlay/serverboundPlay`. |
+| `26.x` | `26.1-26.2-pre-3` | 25 | Java 25/non-remap lane with `ClientCommands` and `PayloadTypeRegistry.clientboundPlay/serverboundPlay`. |
 
 Only move a profile to supported/publishable after its packaged jar launches on
 every exact Minecraft version listed in `modrinth_game_versions`.
@@ -129,11 +129,12 @@ every exact Minecraft version listed in `modrinth_game_versions`.
 2. Version-profile foundation:
    - Add `gradle/version-profiles/*.properties`.
    - Add default, supported, and candidate profile properties.
-   - Start with candidate release profiles `1.20-1.20.4`,
-     `1.20.5-1.20.6`, `1.21-1.21.10`, `1.21.11`, `26.1-26.1.2`, and
-     `26.2-pre-3`.
-   - Map those release profiles to source compat groups `1.20-1.20.4`,
-     `1.20.5-1.21.10`, `1.21.11`, and `26.x`.
+   - Start with candidate release profiles aligned to source compat groups:
+     `1.20-1.20.4`, `1.20.5-1.21.10`, `1.21.11`, and
+     `26.1-26.2-pre-3`.
+   - Split a candidate only when compile probes, binary runtime checks,
+     dependency metadata, or smoke tests prove that one jar cannot cover the
+     proposed profile range.
    - Expand `fabric.mod.json` with active profile Minecraft dependency and Java
      dependency metadata.
    - Expand the Mixin config compatibility level from the active Java target.
@@ -170,10 +171,10 @@ every exact Minecraft version listed in `modrinth_game_versions`.
 7. Minecraft `26.x` build lane:
    - Reuse Inventory Sort's proven model where applicable: non-remapping Loom
      for `26.x`, normal dependencies, and plain jar artifacts.
-   - Use `26.1.2` as the compile anchor for grouped `26.1-26.1.2` release
-     metadata, with `26.1` and `26.1.1` as exact smoke runtimes.
-   - Keep `26.2-pre-3` exact until newer `26.2` release metadata proves a
-     broader range.
+   - Start with one candidate profile, `26.1-26.2-pre-3`, mapped to source
+     compat group `26.x`.
+   - Split to `26.1-26.1.2` and `26.2-pre-3` only if Fabric dependency metadata,
+     compile anchors, or smoke tests prove that one jar cannot cover both.
    - Probe payload, command, packet, advancement, registry key, and server
      reflection APIs under `26.1.2` and `26.2-pre-3`.
    - Current status: TODO.

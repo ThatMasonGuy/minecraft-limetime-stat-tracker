@@ -105,17 +105,20 @@ Examples of major boundaries for this project:
   `candidate_minecraft_version_profiles` list profile file names. Release
   folders and Modrinth version suffixes use each profile's `profile_id`, which
   can be broader than the file name.
-- Initial release profiles should be `1.20-1.20.4`, `1.20.5-1.20.6`,
-  `1.21-1.21.10`, `1.21.11`, `26.1-26.1.2`, and `26.2-pre-3`, mapped onto
-  source compat groups `1.20-1.20.4`, `1.20.5-1.21.10`, `1.21.11`, and `26.x`.
-- For the Minecraft `26.x` lane, use `26.1.2` as the compile anchor for the
-  grouped `26.1-26.1.2` candidate jar, with `26.1` and `26.1.1` used only as
-  exact smoke runtimes. Keep `26.2-pre-3` exact until newer `26.2` release
-  metadata proves a broader range. For prerelease Fabric metadata, remember that
-  Modrinth uses labels like `26.2-pre-3` while Fabric Loader may report/compare
-  runtime versions like `26.2-pre.3`; follow Fabric API's `minecraft`
-  dependency string for `fabric.mod.json` and keep `modrinth_game_versions` as
-  the Modrinth label.
+- Initial release profiles should align with the source compat groups:
+  `1.20-1.20.4`, `1.20.5-1.21.10`, `1.21.11`, and `26.1-26.2-pre-3`, mapped
+  onto source compat groups `1.20-1.20.4`, `1.20.5-1.21.10`, `1.21.11`, and
+  `26.x`.
+- Split a release profile away from its source compat group only when compile
+  probes, binary runtime checks, dependency metadata, or smoke tests prove that
+  one jar cannot honestly cover the proposed range.
+- For the Minecraft `26.x` lane, start with one broad `26.1-26.2-pre-3`
+  candidate mapped to `26.x`. Split it to `26.1-26.1.2` and `26.2-pre-3` only
+  if Fabric dependency metadata, compile anchors, or smoke tests require that.
+  For prerelease Fabric metadata, remember that Modrinth uses labels like
+  `26.2-pre-3` while Fabric Loader may report/compare runtime versions like
+  `26.2-pre.3`; follow Fabric API's `minecraft` dependency string for
+  `fabric.mod.json` and keep `modrinth_game_versions` as the Modrinth label.
 - This mod should need fewer compatibility overlays than Inventory Sort, but do
   not collapse ranges by assumption. Let compile probes and launcher smoke tests
   prove where the API breaks are.

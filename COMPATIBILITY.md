@@ -8,20 +8,19 @@ auditing this mod's own API surface.
 
 ## Executive Recommendation
 
-Keep separate release profiles for dependency metadata and smoke-test coverage,
-but use fewer source compatibility groups where the same code can safely compile
-and run.
+Align candidate release profiles with source compatibility groups by default.
+Only split a candidate away from its compat group when one compiled jar cannot
+honestly cover the runtime dependency metadata, binary compatibility, or smoke
+test matrix.
 
-Recommended initial release profiles:
+Recommended initial candidate profiles:
 
 | Release profile | Compile anchor | Runtime claim after smoke tests | Java | Source compat group |
 | --- | --- | --- | ---: | --- |
 | `1.20-1.20.4` | `1.20` | `1.20`, `1.20.1`, `1.20.2`, `1.20.3`, `1.20.4` | 17 | `1.20-1.20.4` |
-| `1.20.5-1.20.6` | `1.20.5` | `1.20.5`, `1.20.6` | 21 | `1.20.5-1.21.10` |
-| `1.21-1.21.10` | `1.21` or latest proven `1.21.x` anchor | `1.21` through `1.21.10` | 21 | `1.20.5-1.21.10` |
+| `1.20.5-1.21.10` | earliest or latest proven anchor | `1.20.5` through `1.21.10` | 21 | `1.20.5-1.21.10` |
 | `1.21.11` | `1.21.11` | `1.21.11` | 21 | `1.21.11` |
-| `26.1-26.1.2` | `26.1.2` | `26.1`, `26.1.1`, `26.1.2` | 25 | `26.x` |
-| `26.2-pre-3` | `26.2-pre-3` | `26.2-pre-3` | 25 | `26.x` |
+| `26.1-26.2-pre-3` | `26.1.2` or `26.2-pre-3`, to be proven | `26.1`, `26.1.1`, `26.1.2`, `26.2-pre-3` | 25 | `26.x` |
 
 The `1.21.11` source group can probably collapse into
 `1.20.5-1.21.10` after the stat-key and advancement-id helpers avoid direct
@@ -253,8 +252,9 @@ Must contain:
 - `ClientCommandManager` command helper
 - server-directory helper so `File` and `Path` runtimes can both work
 
-This source group should cover both the `1.20.5-1.20.6` and `1.21-1.21.10`
-release profiles unless compile probes reveal an unobserved Fabric API break.
+This source group should start as one candidate release profile. Split it only
+if compile probes, binary runtime checks, or dependency metadata prove that one
+jar cannot cover the full `1.20.5-1.21.10` range.
 
 ### `1.21.11`
 
@@ -285,9 +285,10 @@ Must contain:
 - Java 25 mixin/build metadata
 - Inventory Sort's non-remap release artifact behavior
 
-`26.1` and `26.2-pre-3` should remain separate release profiles because their
-Minecraft/Fabric API dependencies and Modrinth version claims differ, even if
-they share the same source compat group.
+Start with one candidate release profile for `26.1-26.2-pre-3`. Split into
+`26.1-26.1.2` and `26.2-pre-3` only if Fabric dependency metadata, the chosen
+compile anchor, or smoke tests prove that one jar cannot honestly claim both
+families.
 
 ## Release Profile Notes
 

@@ -52,6 +52,10 @@ Each profile should describe:
 - Loader/build-tool versions.
 - A `26.x` non-remap flag if required.
 
+Candidate profiles should start aligned with source compatibility groups. Split
+profiles only when compile probes, binary runtime checks, dependency metadata,
+or smoke tests prove that one jar cannot honestly cover the proposed range.
+
 Keep two profile lists:
 
 - `candidate_minecraft_version_profiles`: builds or experiments that are not
