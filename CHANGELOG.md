@@ -137,6 +137,9 @@ All notable project changes will be documented here.
 - Ran focused GitHub Actions candidate smoke validation run `26942827630`, which
   passed the `1.21.11` `lifetime-stat-tracker-server-only` path and printed the
   dedicated-server pass marker.
+- Bumped the Modrinth publish version to `2.7.1` and added release notes for a
+  validation refresh that publishes every compatibility-group jar after the new
+  dedicated-server smoke gate.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.

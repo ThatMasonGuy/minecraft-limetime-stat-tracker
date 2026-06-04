@@ -7,7 +7,9 @@ source-of-truth Modrinth project page copy, and the live page has been updated
 from that source with API readback verification. The `v2.7.0` Git tag and
 GitHub Release have been backfilled to point at the all-profile publish commit.
 The smoke pipeline now includes dedicated-server launch coverage for the
-optional server component.
+optional server component. The repo is preparing a `2.7.1` validation-refresh
+publish so every live Modrinth file can be backed by the upgraded server smoke
+gate.
 
 ## Project Workflow
 
@@ -233,6 +235,13 @@ optional server component.
      run printed `LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS`.
    - Remaining future hardening: add a true client-to-dedicated-server handshake
      smoke if we decide the heavier local two-process test is worth the runtime.
+15. `2.7.1` validation-refresh release prep:
+   - Bumped `mod_version` to `2.7.1`.
+   - Added `gradle/release-notes/2.7.1.md`, focused on the upgraded
+     dedicated-server release validation rather than code or data changes.
+   - Next step: run the guarded live Modrinth publish workflow for every
+     supported profile, then tag `v2.7.1` and create the matching GitHub Release
+     from the successful publish commit.
 
 ## Current Compatibility Conclusion
 
