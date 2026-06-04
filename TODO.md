@@ -1,7 +1,7 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: GitHub Actions Modrinth publish workflow is being live-tested
-with version `2.7.0` for supported `1.21.11`
+Current checkpoint: GitHub Actions published `2.7.0` for supported `1.21.11` to
+Modrinth version `s24DbwkA`
 
 ## Project Workflow
 
@@ -141,6 +141,9 @@ with version `2.7.0` for supported `1.21.11`
    - Added Fabric API's Modrinth project id `P7dR8mSH` as a required upload
      dependency.
    - Verified `.\gradlew.bat publishModrinthDryRun --no-daemon --console=plain`.
+   - Pushed commit `ecb72d6` and ran GitHub Actions workflow
+     `modrinth publish` with `dry_run=false`, publishing `2.7.0` as Modrinth
+     version `s24DbwkA`.
 
 ## Current Compatibility Conclusion
 

@@ -81,6 +81,8 @@ All notable project changes will be documented here.
 - Recorded Fabric API's Modrinth project id `P7dR8mSH` so upload plans declare
   it as a required dependency.
 - Bumped the Modrinth publish test version to `2.7.0`.
+- Published `2.7.0` through the guarded GitHub Actions Modrinth workflow as
+  Modrinth version `s24DbwkA`.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.
