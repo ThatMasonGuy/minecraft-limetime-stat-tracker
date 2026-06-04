@@ -134,6 +134,9 @@ All notable project changes will be documented here.
 - Wired `ciValidation`, `publishValidation`, the manual candidate smoke workflow,
   and the Modrinth publish workflow artifact capture through the aggregate
   client-plus-server smoke gates.
+- Ran focused GitHub Actions candidate smoke validation run `26942827630`, which
+  passed the `1.21.11` `lifetime-stat-tracker-server-only` path and printed the
+  dedicated-server pass marker.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.

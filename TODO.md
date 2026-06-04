@@ -228,6 +228,9 @@ optional server component.
    - Verified focused `1.21.11` server smoke, focused `1.21.11` client smoke,
      workflow-shaped filtered `smokeTestSelected` server smoke, and
      `buildValidationVersions` across all supported profiles.
+   - Ran focused GitHub Actions candidate smoke validation run `26942827630` from
+     commit `ca7967d`; the filtered `1.21.11` `lifetime-stat-tracker-server-only`
+     run printed `LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS`.
    - Remaining future hardening: add a true client-to-dedicated-server handshake
      smoke if we decide the heavier local two-process test is worth the runtime.
 
