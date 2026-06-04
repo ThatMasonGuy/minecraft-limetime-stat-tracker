@@ -116,6 +116,10 @@ All notable project changes will be documented here.
 - Updated the live Lifetime Stat Tracker Modrinth project summary and
   description page through the Modrinth API, with readback verification and
   ignored before/after snapshots under `build/modrinth/`.
+- Documented the release checkpoint workflow for annotated `v<mod_version>` Git
+  tags and one GitHub Release per mod version after successful Modrinth publish.
+- Backfilled the `v2.7.0` release checkpoint to the all-profile publish commit
+  from GitHub Actions run `26935626612`.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.

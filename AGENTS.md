@@ -54,6 +54,15 @@ unrelated user changes.
   publishing uploads jars and per-version changelogs only; it does not update
   the project summary, description body, gallery, categories, or other
   page-level metadata.
+- After a real Modrinth publish succeeds, create an annotated Git tag for the
+  released `mod_version`, using `v<mod_version>` such as `v2.7.0`. The tag must
+  point at the exact commit used by the successful publish workflow, not a later
+  docs-only or metadata-only follow-up commit.
+- After pushing the release tag, create a GitHub Release from that tag. Use one
+  GitHub Release per `mod_version`, even when Modrinth has multiple
+  profile-suffixed versions for that mod version. Link the Modrinth project and
+  published Modrinth version ids instead of making GitHub the primary download
+  surface.
 - Keep the active `gradle/release-notes/<mod_version>.md` file updated as
   user-facing changes accumulate for that Modrinth release. Put internal build,
   shim, CI, docs, and migration details in `CHANGELOG.md` and `TODO.md`

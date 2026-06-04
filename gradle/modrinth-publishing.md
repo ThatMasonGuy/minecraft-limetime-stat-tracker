@@ -86,6 +86,32 @@ The workflow installs `xvfb`, runs the supported-profile smoke launcher under a
 virtual display, and captures `build/modrinth/upload-plan.json` plus
 `build/release/` as artifacts.
 
+## Git Tags And GitHub Releases
+
+After a real Modrinth publish succeeds, create an annotated Git tag for the
+released `mod_version`:
+
+```powershell
+git tag -a "v2.7.0" <publish-workflow-head-sha> -m "Lifetime Stat Tracker 2.7.0"
+git push origin "v2.7.0"
+```
+
+The tag must point at the exact commit used by the successful publish workflow.
+For a GitHub Actions publish, use the workflow run's `headSha`. Do not tag a
+later docs-only, project-page, or release-record commit as the released source.
+
+Then create one GitHub Release for that tag:
+
+```powershell
+gh release create "v2.7.0" --verify-tag --title "Lifetime Stat Tracker 2.7.0" --notes "<release notes>"
+```
+
+GitHub Releases are an archive and source checkpoint. Modrinth remains the
+primary download surface. Link the Modrinth project and the uploaded Modrinth
+version ids in the GitHub Release notes. When multiple supported Minecraft
+profiles are published for one `mod_version`, keep one GitHub Release and list
+each profile-suffixed Modrinth version under it.
+
 ## Release Notes
 
 Modrinth changelogs should come from a concise per-version release note file:

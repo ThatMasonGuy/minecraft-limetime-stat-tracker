@@ -4,7 +4,8 @@ Current checkpoint: GitHub Actions published `2.7.0` for supported `1.21.11` to
 Modrinth version `s24DbwkA`, then published the promoted compatibility-group
 release entries for Minecraft `1.20` through `26.2-pre-3`. The repo now tracks
 source-of-truth Modrinth project page copy, and the live page has been updated
-from that source with API readback verification.
+from that source with API readback verification. The `v2.7.0` Git tag and
+GitHub Release have been backfilled to point at the all-profile publish commit.
 
 ## Project Workflow
 
@@ -201,6 +202,17 @@ from that source with API readback verification.
    - Updated the live Lifetime Stat Tracker Modrinth project summary and
      description page through the Modrinth API, with readback verification.
    - Saved before/after API snapshots under ignored `build/modrinth/` artifacts.
+13. Git tag and GitHub Release process:
+   - Documented that successful real Modrinth publishes must be followed by an
+     annotated `v<mod_version>` tag on the exact publish workflow commit.
+   - Documented that GitHub Releases are one release page per `mod_version`,
+     linking to Modrinth rather than replacing Modrinth as the primary download
+     surface.
+   - Backfilled the `v2.7.0` release checkpoint against publish workflow commit
+     `30fb089`, the `headSha` for successful GitHub Actions run `26935626612`.
+   - Next pipeline-hardening step: add dedicated server-side smoke coverage for
+     the optional server identity component, then wire that into GitHub testing
+     and publishing gates.
 
 ## Current Compatibility Conclusion
 
@@ -344,6 +356,9 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Project-page summary and long-description copy now live in
      `gradle/modrinth-project-pages.md`; version publish tasks still upload
      only jars and per-version changelogs.
+   - Successful real publishes should now be followed by an annotated
+     `v<mod_version>` Git tag and one GitHub Release that links the Modrinth
+     project/version ids.
 10. Release promotion:
    - Keep new groups in `candidate_minecraft_version_profiles` until compile and
      smoke testing pass.
