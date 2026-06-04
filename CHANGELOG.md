@@ -6,6 +6,14 @@ All notable project changes will be documented here.
 
 ### Added
 
+- Added the initial Gradle version-profile foundation:
+  - Dynamic active-profile loading from `gradle/version-profiles/*.properties`.
+  - Supported profile `1.21.11` and candidate profiles `1.20-1.20.4`,
+    `1.20.5-1.21.10`, and `26.1-26.2-pre-3`.
+  - Active profile expansion for `fabric.mod.json` Minecraft/Java dependencies
+    and client Mixin compatibility level.
+  - `printVersionProfile`, `listVersionProfiles`, `buildAllVersions`, and
+    `buildValidationVersions` Gradle tasks.
 - Added the project documentation foundation for the upcoming multi-version
   compatibility pipeline:
   - Fresh-agent workflow and verification guidance in `AGENTS.md`.
@@ -25,6 +33,11 @@ All notable project changes will be documented here.
 
 ### Changed
 
+- Upgraded the Gradle wrapper to `9.4.0` so the `26.x` Loom `1.16` profile can
+  configure.
+- Replaced flat Minecraft/Fabric dependency properties with
+  `minecraft_version_profile`, `supported_minecraft_version_profiles`, and
+  `candidate_minecraft_version_profiles`.
 - Linked the new project-process docs from `README.md` so future migration work
   can start from the repository instead of chat history.
 - Tightened `TODO.md` and `AGENTS.md` around the compatibility drift audit:

@@ -1,7 +1,7 @@
 {
   "required": true,
   "package": "tempeststudios.lifetimestattracker.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "${mixin_compatibility_level}",
   "client": ["ClientPacketListenerMixin", "ClientAdvancementsMixin"],
   "injectors": {
     "defaultRequire": 1

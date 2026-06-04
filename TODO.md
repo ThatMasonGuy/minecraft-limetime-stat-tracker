@@ -1,6 +1,7 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: Compatibility drift map complete; profile foundation is next
+Current checkpoint: Version-profile foundation implemented; compatibility
+adapters are next
 
 ## Project Workflow
 
@@ -71,6 +72,20 @@ Current checkpoint: Compatibility drift map complete; profile foundation is next
      directory return type, `1.21.11` `ResourceLocation` to `Identifier`
      descriptor change, and `26.x` Fabric command/payload registration rename.
    - Drafted the source compat group map in `COMPATIBILITY.md`.
+3. Version-profile foundation:
+   - Added dynamic profile loading through `settings.gradle` and `build.gradle`.
+   - Added active profile metadata expansion for `fabric.mod.json` and
+     `lifetime-stat-tracker.client.mixins.json`.
+   - Added profile property files for supported `1.21.11` and candidates
+     `1.20-1.20.4`, `1.20.5-1.21.10`, and `26.1-26.2-pre-3`.
+   - Added `printVersionProfile`, `listVersionProfiles`, `buildAllVersions`,
+     and `buildValidationVersions` Gradle tasks.
+   - Upgraded the Gradle wrapper to `9.4.0` so the `26.x` Loom `1.16` profile
+     can configure.
+   - Verified `.\gradlew.bat build --no-daemon --console=plain`,
+     `.\gradlew.bat buildAllVersions --no-daemon --console=plain`, and
+     `printVersionProfile` for all candidate profiles. Candidate compile builds
+     still wait on compatibility adapters.
 
 ## Current Compatibility Conclusion
 
@@ -127,7 +142,7 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Decide whether to clean up mojibake/non-ASCII chat glyphs in command output
      before or after compatibility work.
    - Confirm the current license and Modrinth/project metadata.
-   - Current status: TODO.
+   - Current status: build verified; cleanup/metadata review still TODO.
 2. Version-profile foundation:
    - Add `gradle/version-profiles/*.properties`.
    - Add default, supported, and candidate profile properties.
@@ -140,13 +155,14 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Expand `fabric.mod.json` with active profile Minecraft dependency and Java
      dependency metadata.
    - Expand the Mixin config compatibility level from the active Java target.
-   - Current status: TODO.
+   - Current status: DONE for the initial supported/candidate profile map.
 3. Build tasks and release artifact collection:
    - Add profile-aware Gradle task wiring.
    - Collect release jars under `build/release/<profile_id>/`.
    - Add metadata verification for mod id, version, Minecraft dependency, Java
      dependency, icon path, and Mixin compatibility level.
-   - Current status: TODO.
+   - Current status: profile-aware build tasks done; release collection and
+     metadata verification TODO.
 4. Compile probe matrix:
    - Probe exact runtimes first, using the Inventory Sort version metadata as a
      starting point.
@@ -169,7 +185,8 @@ every exact Minecraft version listed in `modrinth_game_versions`.
      and Java 25 for `26.x`.
    - Keep regular push/PR CI on a fast default-profile build.
    - Add a manual compatibility validation workflow for targeted profiles.
-   - Current status: TODO.
+   - Current status: Gradle wrapper upgraded to `9.4.0` and profile Java release
+     values are wired; full toolchain and CI workflows TODO.
 7. Minecraft `26.x` build lane:
    - Reuse Inventory Sort's proven model where applicable: non-remapping Loom
      for `26.x`, normal dependencies, and plain jar artifacts.
@@ -179,7 +196,8 @@ every exact Minecraft version listed in `modrinth_game_versions`.
      compile anchors, or smoke tests prove that one jar cannot cover both.
    - Probe payload, command, packet, advancement, registry key, and server
      reflection APIs under `26.1.2` and `26.2-pre-3`.
-   - Current status: TODO.
+   - Current status: profile config resolves under Loom `1.16`; source
+     compatibility and compile probes TODO.
 8. Smoke-test automation:
    - Add a minimal client smoke launcher that installs the packaged release jar,
      reaches the client tick loop, force-loads mixin targets, and exits with a

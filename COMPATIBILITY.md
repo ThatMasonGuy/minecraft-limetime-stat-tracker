@@ -14,7 +14,7 @@ compatibility groups by default. Split a candidate only when one compiled jar
 literally cannot cover the combined runtime dependency metadata, binary
 compatibility, or smoke-test matrix.
 
-Recommended initial candidate profiles:
+Recommended initial release profile map:
 
 | Release profile | Compile anchor | Runtime claim after smoke tests | Java | Source compat group |
 | --- | --- | --- | ---: | --- |

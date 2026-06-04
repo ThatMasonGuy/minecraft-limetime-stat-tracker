@@ -1,7 +1,64 @@
 plugins {
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'net.fabricmc.fabric-loom-remap' apply false
+	id 'net.fabricmc.fabric-loom' apply false
 	id 'maven-publish'
 }
+
+def versionProfileName = providers.gradleProperty('minecraft_version_profile')
+		.orElse(providers.gradleProperty('target_minecraft_version'))
+		.orElse('1.21.11')
+		.get()
+def versionProfileFile = file("gradle/version-profiles/${versionProfileName}.properties")
+if (!versionProfileFile.isFile()) {
+	throw new GradleException("Unknown Minecraft version profile '${versionProfileName}'. Add ${versionProfileFile}.")
+}
+def versionProfile = new Properties()
+versionProfileFile.withInputStream { versionProfile.load(it) }
+
+[
+		'minecraft_version',
+		'loader_version',
+		'loom_version',
+		'fabric_api_version',
+		'java_version'
+].each { key ->
+	if (!versionProfile.getProperty(key)) {
+		throw new GradleException("Minecraft version profile '${versionProfileName}' is missing ${key}.")
+	}
+}
+
+def profileProperty = { String key, String defaultValue ->
+	def value = versionProfile.getProperty(key)
+	return value != null && !value.isBlank() ? value.trim() : defaultValue
+}
+def listProperty = { String key, String defaultValue ->
+	(findProperty(key) ?: defaultValue)
+			.toString()
+			.split(',')
+			.collect { it.trim() }
+			.findAll { !it.isEmpty() }
+}
+def selectedMinecraftVersion = versionProfile.getProperty('minecraft_version').trim()
+
+ext.minecraft_version_profile = versionProfileName
+ext.minecraft_version_profile_id = profileProperty('profile_id', versionProfileName)
+ext.minecraft_version = selectedMinecraftVersion
+ext.loader_version = versionProfile.getProperty('loader_version').trim()
+ext.loom_version = versionProfile.getProperty('loom_version').trim()
+ext.fabric_api_version = versionProfile.getProperty('fabric_api_version').trim()
+ext.target_java_version = versionProfile.getProperty('java_version') as int
+ext.minecraft_dependency = profileProperty('minecraft_dependency', "~${selectedMinecraftVersion}")
+ext.compat_group = profileProperty('compat_group', minecraft_version_profile_id)
+ext.modrinth_game_versions = profileProperty('modrinth_game_versions', selectedMinecraftVersion)
+		.split(',')
+		.collect { it.trim() }
+		.findAll { !it.isEmpty() }
+ext.unobfuscated_minecraft = profileProperty('unobfuscated_minecraft', 'false').toBoolean()
+ext.loom_plugin_id = unobfuscated_minecraft ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
+ext.fabric_dependency_configuration = unobfuscated_minecraft ? 'implementation' : 'modImplementation'
+ext.release_jar_task_name = unobfuscated_minecraft ? 'jar' : 'remapJar'
+
+apply plugin: loom_plugin_id
 
 version = project.mod_version
 group = project.maven_group
@@ -11,11 +68,7 @@ base {
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+	// Loom adds the essential Fabric/Minecraft repositories automatically.
 }
 
 loom {
@@ -27,51 +80,206 @@ loom {
 			sourceSet sourceSets.client
 		}
 	}
+}
 
+sourceSets {
+	main {
+		java {
+			srcDir "src/compat/${compat_group}/main/java"
+		}
+		resources {
+			srcDir "src/compat/${compat_group}/main/resources"
+		}
+	}
+	client {
+		java {
+			srcDir "src/compat/${compat_group}/client/java"
+		}
+		resources {
+			srcDir "src/compat/${compat_group}/client/resources"
+		}
+	}
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	
+	minecraft "com.mojang:minecraft:${minecraft_version}"
+	if (!unobfuscated_minecraft) {
+		mappings loom.officialMojangMappings()
+	}
+	add(fabric_dependency_configuration, "net.fabricmc:fabric-loader:${loader_version}")
+	add(fabric_dependency_configuration, "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}")
 }
 
 processResources {
-	inputs.property "version", project.version
+	def resourceProperties = [
+			version: project.version,
+			minecraft_version: minecraft_version,
+			loader_version: loader_version,
+			fabric_api_version: fabric_api_version,
+			java_version: target_java_version,
+			mixin_compatibility_level: "JAVA_${target_java_version}",
+			minecraft_dependency: minecraft_dependency,
+			minecraft_version_profile_id: minecraft_version_profile_id,
+			compat_group: compat_group,
+			modrinth_game_versions: modrinth_game_versions.join(',')
+	]
+
+	inputs.properties(resourceProperties)
 
 	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
+		expand(resourceProperties)
+	}
+	filesMatching("*.mixins.json") {
+		expand(resourceProperties)
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = target_java_version
+}
+
+tasks.withType(JavaExec).configureEach {
+	jvmArgs('-Xmx2G')
 }
 
 java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
 	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.toVersion(target_java_version)
+	targetCompatibility = JavaVersion.toVersion(target_java_version)
 }
 
 jar {
 	inputs.property "archivesName", project.base.archivesName
 
 	from("LICENSE") {
-		rename { "${it}_${inputs.properties.archivesName}"}
+		rename { "${it}_${inputs.properties.archivesName}" }
 	}
 }
 
-// configure the maven publication
+def supportedMinecraftVersionProfiles = listProperty(
+		'supported_minecraft_version_profiles',
+		minecraft_version_profile
+)
+def candidateMinecraftVersionProfiles = listProperty(
+		'candidate_minecraft_version_profiles',
+		''
+)
+def validationMinecraftVersionProfiles = (supportedMinecraftVersionProfiles + candidateMinecraftVersionProfiles).unique()
+def releaseOutputDirectory = layout.buildDirectory.dir("release/${minecraft_version_profile_id}")
+def gradleWrapperExecutable = System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')
+		? 'gradlew.bat'
+		: './gradlew'
+
+def loadVersionProfile = { String profileName ->
+	def profileFile = file("gradle/version-profiles/${profileName}.properties")
+	if (!profileFile.isFile()) {
+		throw new GradleException("Unknown Minecraft version profile '${profileName}'. Add ${profileFile}.")
+	}
+	def profile = new Properties()
+	profileFile.withInputStream { profile.load(it) }
+	return profile
+}
+
+def safeTaskSuffix = { String value ->
+	value.replaceAll(/[^A-Za-z0-9]/, '_')
+}
+
+def profileBuildTaskName = { String taskPrefix, String profile ->
+	"${taskPrefix}${safeTaskSuffix(profile)}"
+}
+
+def registerProfileBuildTasks = { List<String> profiles, String taskPrefix, String taskGroup, String descriptionPrefix ->
+	def previousTask = null
+	profiles.collect { profile ->
+		def taskName = profileBuildTaskName(taskPrefix, profile)
+		def taskProvider = tasks.register(taskName, Exec) {
+			group = taskGroup
+			description = "${descriptionPrefix} ${profile}."
+			commandLine gradleWrapperExecutable,
+					'build',
+					"-Pminecraft_version_profile=${profile}",
+					'--no-daemon',
+					'--console=plain'
+		}
+		if (previousTask != null) {
+			def predecessor = previousTask
+			taskProvider.configure {
+				mustRunAfter predecessor
+			}
+		}
+		previousTask = taskProvider
+		return taskProvider
+	}
+}
+
+def supportedProfileBuildTasks = registerProfileBuildTasks(
+		supportedMinecraftVersionProfiles,
+		'buildMinecraft',
+		'build',
+		'Builds the mod jar for supported Minecraft version profile'
+)
+
+def validationProfileBuildTasks = registerProfileBuildTasks(
+		validationMinecraftVersionProfiles,
+		'validateMinecraft',
+		'verification',
+		'Builds the mod jar for validation Minecraft version profile'
+)
+
+tasks.register('printVersionProfile') {
+	group = 'help'
+	description = 'Prints the active Minecraft/Fabric build profile.'
+
+	doLast {
+		println "Minecraft version profile: ${minecraft_version_profile}"
+		println "Profile id: ${minecraft_version_profile_id}"
+		println "Minecraft: ${minecraft_version}"
+		println "Minecraft dependency: ${minecraft_dependency}"
+		println "Modrinth game versions: ${modrinth_game_versions.join(', ')}"
+		println "Fabric Loader: ${loader_version}"
+		println "Fabric API: ${fabric_api_version}"
+		println "Loom: ${loom_version}"
+		println "Loom plugin: ${loom_plugin_id}"
+		println "Unobfuscated Minecraft: ${unobfuscated_minecraft}"
+		println "Java release: ${target_java_version}"
+		println "Gradle JVM: ${System.getProperty('java.version')} (${System.getProperty('java.home')})"
+		println "Compat group: ${compat_group}"
+		println "Release jar task: ${release_jar_task_name}"
+		println "Release output: ${releaseOutputDirectory.get().asFile}"
+	}
+}
+
+tasks.register('buildAllVersions') {
+	group = 'build'
+	description = 'Builds every supported Minecraft version profile.'
+	dependsOn supportedProfileBuildTasks
+}
+
+tasks.register('buildValidationVersions') {
+	group = 'verification'
+	description = 'Builds every supported and candidate Minecraft version profile.'
+	dependsOn validationProfileBuildTasks
+
+	doFirst {
+		println "Validation profiles: ${validationMinecraftVersionProfiles.join(', ')}"
+	}
+}
+
+tasks.register('listVersionProfiles') {
+	group = 'help'
+	description = 'Lists supported and candidate Minecraft version profiles.'
+
+	doLast {
+		println "Active profile: ${minecraft_version_profile}"
+		println "Supported profiles: ${supportedMinecraftVersionProfiles.join(', ')}"
+		println "Candidate profiles: ${candidateMinecraftVersionProfiles.join(', ')}"
+		candidateMinecraftVersionProfiles.each { profileName ->
+			def profile = loadVersionProfile(profileName)
+			println "  - ${profileName}: profile_id=${profile.getProperty('profile_id', profileName)}, compat_group=${profile.getProperty('compat_group', profileName)}, minecraft=${profile.getProperty('minecraft_version')}"
+		}
+	}
+}
+
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
@@ -80,11 +288,7 @@ publishing {
 		}
 	}
 
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
 	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
+		// Add publishing repositories here when needed.
 	}
 }

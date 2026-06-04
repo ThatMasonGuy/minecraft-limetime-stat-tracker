@@ -1,8 +1,9 @@
 # Minecraft Version Profiles
 
-This directory is reserved for the planned multi-version profile system. The
-current repository still uses flat properties in `gradle.properties` and builds
-one Minecraft `1.21.11` jar.
+This directory contains the multi-version profile metadata used by Gradle. The
+current supported build remains Minecraft `1.21.11`; broader profiles are
+candidates until compatibility adapters, compile probes, and smoke tests prove
+them.
 
 ## Goal
 
@@ -14,26 +15,26 @@ Profiles are **release compatibility groups**. A profile does not have to be one
 exact Minecraft patch version; it can represent one compiled jar that is tested
 and published for several compatible Minecraft versions.
 
-## Planned Profile Lists
+## Profile Lists
 
-The eventual `gradle.properties` model should have:
+`gradle.properties` currently has:
 
 ```properties
 minecraft_version_profile=1.21.11
-supported_minecraft_version_profiles=
-candidate_minecraft_version_profiles=1.20-1.20.4,1.20.5-1.21.10,1.21.11,26.1-26.2-pre-3
+supported_minecraft_version_profiles=1.21.11
+candidate_minecraft_version_profiles=1.20-1.20.4,1.20.5-1.21.10,26.1-26.2-pre-3
 ```
 
 Only move a profile from candidate to supported after it builds, verifies
 metadata, and passes launcher smoke tests for every listed game version.
 
-Candidate profiles should start aligned with source compatibility groups. Split
-a profile only after compile probes, binary runtime checks, dependency metadata,
+Candidate profiles start aligned with source compatibility groups. Split a
+profile only after compile probes, binary runtime checks, dependency metadata,
 or smoke tests prove that one jar cannot honestly cover the proposed range.
-Prefer the fewest unique build artifacts possible; do not add separate builds
-for patch ranges that can share one compatible jar.
+Prefer the fewest unique build artifacts possible; do not add separate builds for
+patch ranges that can share one compatible jar.
 
-## Planned Profile Fields
+## Profile Fields
 
 ```properties
 profile_id=1.20.5-1.21.10
@@ -55,25 +56,29 @@ unobfuscated_minecraft=false
 - `modrinth_game_versions` is the exact set of game versions to publish for the
   jar after smoke testing.
 - `compat_group` selects any version-specific source overlay.
-- `java_version` selects the Gradle toolchain and generated Mixin compatibility
-  level.
+- `java_version` selects the Java compile release and generated Mixin
+  compatibility level. Full toolchain workflow wiring is still planned.
 - `unobfuscated_minecraft=true` is expected only for Minecraft `26.x` profiles
   if this repo follows Inventory Sort's non-remap build lane.
 
-## Planned Commands
+## Implemented Commands
 
-These commands are documentation for the intended pipeline and may not exist
-until the Gradle migration is implemented:
+Current profile-foundation commands:
 
 ```powershell
 .\gradlew.bat printVersionProfile
+.\gradlew.bat listVersionProfiles
 .\gradlew.bat build "-Pminecraft_version_profile=1.21.11"
 .\gradlew.bat buildAllVersions
-.\gradlew.bat verifyReleaseJars
-.\gradlew.bat ciValidation
+.\gradlew.bat buildValidationVersions
 ```
 
-Current command:
+`buildAllVersions` builds only profiles listed in
+`supported_minecraft_version_profiles`, which is currently just `1.21.11`.
+`buildValidationVersions` includes candidates and is expected to fail until the
+compatibility adapter layer exists.
+
+Baseline command:
 
 ```powershell
 .\gradlew.bat build --no-daemon --console=plain
