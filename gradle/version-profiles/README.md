@@ -15,6 +15,12 @@ Profiles are **release compatibility groups**. A profile does not have to be one
 exact Minecraft patch version; it can represent one compiled jar that is tested
 and published for several compatible Minecraft versions.
 
+Exact smoke runtime profiles, such as `1.20.1.properties`, are different from
+release profiles. They exist so the smoke launcher can boot the exact Minecraft
+runtime claimed by a release profile. Do not add these smoke-only profiles to
+`supported_minecraft_version_profiles` or `candidate_minecraft_version_profiles`
+unless we intentionally decide to publish more jars.
+
 ## Profile Lists
 
 `gradle.properties` currently has:
@@ -80,6 +86,17 @@ Current profile-foundation commands:
 builds only profiles listed in `supported_minecraft_version_profiles`, which is
 currently just `1.21.11`. `buildValidationVersions` includes candidates and
 currently passes for the initial four-profile compile matrix.
+
+Current smoke commands:
+
+```powershell
+.\gradlew.bat verifySmokeTestMatrix
+.\gradlew.bat smokeTestSupportedClients
+.\gradlew.bat smokeTestSelectedClients "-Plifetimestattracker_smoke_profiles=1.20.5-1.21.10" "-Plifetimestattracker_smoke_game_versions=1.21.10"
+.\gradlew.bat smokeTestValidationClients
+.\gradlew.bat publishValidation
+.\gradlew.bat ciValidation
+```
 
 Baseline command:
 

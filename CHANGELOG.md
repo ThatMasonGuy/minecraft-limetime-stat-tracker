@@ -37,6 +37,18 @@ All notable project changes will be documented here.
     `PayloadTypeRegistry.clientboundPlay/serverboundPlay`.
   - Shared descriptor-safe helpers for advancement ids, registry keys, server
     paths, server op checks, and optional local seed migration.
+- Added automated packaged-jar client smoke testing:
+  - A no-source `smokelaunch` subproject launches exact Minecraft runtimes with
+    the release jar injected through `fabric.addMods`.
+  - `LifetimeStatTrackerSmokeTest` force-loads `ClientPacketListener` and
+    `ClientAdvancements`, waits for the client tick loop, prints
+    `LIFETIMESTATTRACKER_SMOKE_TEST_PASS`, and exits cleanly.
+  - `verifySmokeTestMatrix`, `smokeTestSupportedClients`,
+    `smokeTestSelectedClients`, `smokeTestValidationClients`,
+    `publishValidation`, and `ciValidation` now exist.
+  - Exact smoke runtime profiles cover every Minecraft version listed by the
+    current supported and candidate release profiles without adding extra
+    publishable release artifacts.
 
 ### Changed
 
@@ -58,6 +70,11 @@ All notable project changes will be documented here.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.
+- Recorded the supported `1.21.11` smoke launch as passing in
+  `gradle/smoke-tests.json`; candidate smoke records remain pending and
+  non-publishable.
+- Wired `check` to `verifySmokeTestMatrix`, so supported profiles must keep
+  passing smoke records while candidates can remain tracked as pending.
 - Replaced flat Minecraft/Fabric dependency properties with
   `minecraft_version_profile`, `supported_minecraft_version_profiles`, and
   `candidate_minecraft_version_profiles`.
