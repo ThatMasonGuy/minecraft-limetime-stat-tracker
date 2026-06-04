@@ -108,6 +108,13 @@ implemented for supported and candidate profile builds
      repository secret `MODRINTH_TOKEN`.
    - Verified `.\gradlew.bat buildRelease --no-daemon --console=plain` and
      `.\gradlew.bat buildValidationVersions --no-daemon --console=plain`.
+6. License update:
+   - Replaced the prior license mismatch with `LGPL-3.0-or-later` across
+     `LICENSE`, `LICENSE-GPL-3.0`, `README.md`, and `fabric.mod.json`.
+   - Updated release metadata verification to require
+     `LGPL-3.0-or-later` and both bundled license files in packaged jars.
+   - Verified `.\gradlew.bat buildRelease --no-daemon --console=plain` and
+     `.\gradlew.bat buildValidationVersions --no-daemon --console=plain`.
 
 ## Current Compatibility Conclusion
 
@@ -164,9 +171,8 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Decide whether to clean up mojibake/non-ASCII chat glyphs in command output
      before or after compatibility work.
    - Confirm the current license and Modrinth/project metadata.
-   - Current status: build verified and Modrinth project id recorded. License
-     metadata needs a user decision before publishing because `fabric.mod.json`
-     and `README.md` say MIT while `LICENSE` is CC0 1.0. Cleanup still TODO.
+   - Current status: build verified, Modrinth project id recorded, and license
+     metadata aligned to `LGPL-3.0-or-later`. Cleanup still TODO.
 2. Version-profile foundation:
    - Add `gradle/version-profiles/*.properties`.
    - Add default, supported, and candidate profile properties.
@@ -186,7 +192,7 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Add metadata verification for mod id, version, Minecraft dependency, Java
      dependency, icon path, and Mixin compatibility level.
    - Current status: DONE for compile-level release jars. Runtime smoke gates
-     and license decision still block publish promotion.
+     still block publish promotion.
 4. Compile probe matrix:
    - Probe exact runtimes first, using the Inventory Sort version metadata as a
      starting point.

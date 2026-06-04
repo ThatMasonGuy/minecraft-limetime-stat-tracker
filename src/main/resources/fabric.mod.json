@@ -8,7 +8,7 @@
   "contact": {
     "homepage": "https://github.com/tempeststudios/lifetime-stat-tracker"
   },
-  "license": "MIT",
+  "license": "LGPL-3.0-or-later",
   "icon": "assets/lifetime-stat-tracker/icon.png",
   "environment": "*",
   "entrypoints": {

@@ -217,4 +217,5 @@ build/libs/
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+LGPL-3.0-or-later. See [LICENSE](LICENSE) and
+[LICENSE-GPL-3.0](LICENSE-GPL-3.0).

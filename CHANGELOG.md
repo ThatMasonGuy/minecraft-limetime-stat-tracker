@@ -55,6 +55,9 @@ All notable project changes will be documented here.
     dependency, and required client mixins.
 - Recorded Modrinth project id `rJCvFZKh` and documented the expected
   `MODRINTH_TOKEN` repository secret for future publishing automation.
+- Changed the project license metadata and bundled license files to
+  `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
+  `LICENSE` mismatch.
 - Replaced flat Minecraft/Fabric dependency properties with
   `minecraft_version_profile`, `supported_minecraft_version_profiles`, and
   `candidate_minecraft_version_profiles`.
