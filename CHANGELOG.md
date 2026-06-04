@@ -58,6 +58,8 @@ All notable project changes will be documented here.
   - `.github/workflows/modrinth-publish.yml` provides the manual dry-run or real
     publish path using the repository `MODRINTH_TOKEN` secret.
   - Added `gradle/release-notes/2.1.0.md` for the first Modrinth upload.
+  - Added `gradle/release-notes/2.7.0.md` for the first live GitHub Actions
+    publish test.
 
 ### Changed
 
@@ -78,6 +80,7 @@ All notable project changes will be documented here.
   `MODRINTH_TOKEN` repository secret for future publishing automation.
 - Recorded Fabric API's Modrinth project id `P7dR8mSH` so upload plans declare
   it as a required dependency.
+- Bumped the Modrinth publish test version to `2.7.0`.
 - Changed the project license metadata and bundled license files to
   `LGPL-3.0-or-later`, replacing the previous README/fabric metadata versus
   `LICENSE` mismatch.

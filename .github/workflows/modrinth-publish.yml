@@ -47,6 +47,12 @@ jobs:
         run: java -version
       - name: install virtual display
         run: sudo apt-get update && sudo apt-get install -y xvfb
+      - name: check modrinth token
+        if: ${{ !inputs.dry_run }}
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: |
+          test -n "$MODRINTH_TOKEN" || (echo "Missing MODRINTH_TOKEN repository secret" && exit 1)
       - name: modrinth dry run
         if: ${{ inputs.dry_run }}
         run: >
@@ -69,6 +75,7 @@ jobs:
           --no-daemon
           --console=plain
       - name: capture upload plan and release jars
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Modrinth Upload Plan

@@ -1,7 +1,7 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: Guarded Modrinth dry-run and publish automation is
-implemented for the supported `1.21.11` profile
+Current checkpoint: GitHub Actions Modrinth publish workflow is being live-tested
+with version `2.7.0` for supported `1.21.11`
 
 ## Project Workflow
 
@@ -136,6 +136,8 @@ implemented for the supported `1.21.11` profile
    - Added `.github/workflows/modrinth-publish.yml`, using the repository
      secret `MODRINTH_TOKEN` for real uploads and `xvfb` for CI smoke launches.
    - Added Modrinth release notes for `2.1.0`.
+   - Added Modrinth release notes for `2.7.0` and bumped `mod_version` for the
+     first live GitHub Actions publish test.
    - Added Fabric API's Modrinth project id `P7dR8mSH` as a required upload
      dependency.
    - Verified `.\gradlew.bat publishModrinthDryRun --no-daemon --console=plain`.
