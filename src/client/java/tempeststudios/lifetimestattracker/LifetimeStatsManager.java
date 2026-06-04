@@ -10,6 +10,8 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.stats.Stat;
 import net.minecraft.stats.StatType;
+import tempeststudios.lifetimestattracker.compat.ServerPathCompat;
+import tempeststudios.lifetimestattracker.compat.client.RegistryKeyCompat;
 
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -359,34 +361,11 @@ public class LifetimeStatsManager {
             StatType<?> type = stat.getType();
             Object value = stat.getValue();
 
-            String typeId;
-            try {
-                Object typeKey = net.minecraft.core.registries.BuiltInRegistries.STAT_TYPE.getKey(type);
-                typeId = String.valueOf(typeKey);
-            } catch (Throwable ignored) {
-                try {
-                    Object typeIdObj = net.minecraft.core.registries.BuiltInRegistries.STAT_TYPE.getId(type);
-                    typeId = String.valueOf(typeIdObj);
-                } catch (Throwable ignored2) {
-                    typeId = "unknown_stat_type";
-                }
-            }
-
-            @SuppressWarnings("unchecked")
-            var valueRegistry = (net.minecraft.core.Registry<Object>) type.getRegistry();
-
-            String valueId;
-            try {
-                Object key = valueRegistry.getKey(value);
-                valueId = String.valueOf(key);
-            } catch (Throwable ignored) {
-                try {
-                    Object id = valueRegistry.getId(value);
-                    valueId = String.valueOf(id);
-                } catch (Throwable ignored2) {
-                    valueId = "unknown_value";
-                }
-            }
+            String typeId = RegistryKeyCompat.keyString(
+                    net.minecraft.core.registries.BuiltInRegistries.STAT_TYPE,
+                    type,
+                    "unknown_stat_type");
+            String valueId = RegistryKeyCompat.keyString(type.getRegistry(), value, "unknown_value");
 
             return typeId + ":" + valueId;
         } catch (Throwable t) {
@@ -707,10 +686,12 @@ public class LifetimeStatsManager {
         if (integrated != null) {
             try {
                 String levelName = integrated.getWorldData().getLevelName();
-                long seed = integrated.getWorldData().worldGenOptions().seed();
+                Long seed = integratedSeed(integrated);
                 String stableId = integratedLevelId(integrated);
                 String handle = "local:" + sanitizeHandlePart(stableId != null ? stableId : levelName);
-                migrateLocalHandleAlias("local:" + levelName + ":" + seed, handle);
+                if (seed != null) {
+                    migrateLocalHandleAlias("local:" + levelName + ":" + seed, handle);
+                }
                 return handle;
             } catch (Throwable ignored) {
             }
@@ -910,13 +891,22 @@ public class LifetimeStatsManager {
         }
 
         try {
-            Path serverDir = server.getServerDirectory();
-            Path fileName = serverDir.getFileName();
-            if (fileName != null) {
-                String id = fileName.toString();
-                if (!id.isBlank()) {
-                    return id;
-                }
+            String id = ServerPathCompat.serverDirectoryName(server);
+            if (id != null && !id.isBlank()) {
+                return id;
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    private static Long integratedSeed(MinecraftServer server) {
+        try {
+            Object worldData = server.getWorldData();
+            Object worldGenOptions = worldData.getClass().getMethod("worldGenOptions").invoke(worldData);
+            Object seed = worldGenOptions.getClass().getMethod("seed").invoke(worldGenOptions);
+            if (seed instanceof Long value) {
+                return value;
             }
         } catch (Throwable ignored) {
         }

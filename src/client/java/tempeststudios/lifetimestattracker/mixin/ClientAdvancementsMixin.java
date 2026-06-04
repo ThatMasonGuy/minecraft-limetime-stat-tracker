@@ -1,6 +1,5 @@
 package tempeststudios.lifetimestattracker.mixin;
 
-import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientAdvancements;
@@ -13,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import tempeststudios.lifetimestattracker.LifetimeStatsManager;
+import tempeststudios.lifetimestattracker.compat.client.AdvancementIdCompat;
 
 import java.util.Map;
 
@@ -21,7 +21,7 @@ public class ClientAdvancementsMixin {
 
     @Shadow
     @Final
-    private Map<AdvancementHolder, AdvancementProgress> progress;
+    private Map<?, AdvancementProgress> progress;
 
     @Inject(method = "update", at = @At("TAIL"))
     private void lifetimeStatTracker$onAdvancementUpdate(
@@ -29,9 +29,12 @@ public class ClientAdvancementsMixin {
             CallbackInfo ci) {
         Minecraft.getInstance().execute(() -> {
             try {
-                for (Map.Entry<AdvancementHolder, AdvancementProgress> entry : progress.entrySet()) {
+                for (Map.Entry<?, AdvancementProgress> entry : progress.entrySet()) {
                     if (entry.getValue() != null && entry.getValue().isDone()) {
-                        String advId = entry.getKey().id().toString();
+                        String advId = AdvancementIdCompat.idString(entry.getKey());
+                        if (advId == null) {
+                            continue;
+                        }
                         
                         // Skip recipe unlocks - only track actual advancements
                         if (advId.contains("recipes/")) {

@@ -1,8 +1,8 @@
 # Compatibility Source Groups
 
 Compatibility groups hold source files that only compile for a specific
-Minecraft API shape. This directory is reserved for the planned multi-version
-pipeline; no compatibility overlays are active yet.
+Minecraft API shape. The first overlays are active and selected by the current
+Gradle version profile's `compat_group`.
 
 Expected layout:
 
@@ -42,7 +42,7 @@ tempeststudios.lifetimestattracker.compat.client
 tempeststudios.lifetimestattracker.compat.mixin
 ```
 
-Required compatibility candidates:
+Implemented compatibility adapters:
 
 - `StatsPacketCompat`: `getStats()` on `1.20-1.20.4`, `stats()` on
   `1.20.5+`.
@@ -58,8 +58,10 @@ Required compatibility candidates:
   `ClientCommands` on `26.x`.
 - `ServerPathCompat`: normalize `MinecraftServer#getServerDirectory()` returning
   `File` through `1.20.6` and `Path` from `1.21+`.
-- replacement mixins only where the adapter approach cannot cover a target
-  method or field shape.
+- `ServerPermissionCompat`: descriptor-safe server op checks across
+  `GameProfile` and `NameAndId`.
+- replacement mixins only where the adapter approach cannot cover a future
+  target method or field shape.
 
 Avoid compiling duplicate fully-qualified class names from shared and compat
 source folders. Prefer shared code calling small compat adapters over copying

@@ -139,10 +139,16 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.withType(JavaExec).configureEach {
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(target_java_version)
+	}
 	jvmArgs('-Xmx2G')
 }
 
 java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(target_java_version)
+	}
 	withSourcesJar()
 	sourceCompatibility = JavaVersion.toVersion(target_java_version)
 	targetCompatibility = JavaVersion.toVersion(target_java_version)

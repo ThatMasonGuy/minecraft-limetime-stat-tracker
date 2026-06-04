@@ -30,11 +30,22 @@ All notable project changes will be documented here.
   for stat packets, advancement ids, registry keys, custom payload networking,
   client commands, server directory fallback, Java toolchains, and the `26.x`
   build lane.
+- Added the first compatibility adapter layer:
+  - Legacy `1.20-1.20.4` stat packet conversion and raw channel networking.
+  - Modern typed payload overlays for `1.20.5-1.21.10` and `1.21.11`.
+  - `26.x` overlays for `ClientCommands` and
+    `PayloadTypeRegistry.clientboundPlay/serverboundPlay`.
+  - Shared descriptor-safe helpers for advancement ids, registry keys, server
+    paths, server op checks, and optional local seed migration.
 
 ### Changed
 
 - Upgraded the Gradle wrapper to `9.4.0` so the `26.x` Loom `1.16` profile can
   configure.
+- Configured Gradle Java toolchains from the active profile so Java 17, Java 21,
+  and Java 25 profiles can compile in one validation matrix.
+- Verified `buildValidationVersions` across supported `1.21.11` and candidate
+  profiles `1.20-1.20.4`, `1.20.5-1.21.10`, and `26.1-26.2-pre-3`.
 - Replaced flat Minecraft/Fabric dependency properties with
   `minecraft_version_profile`, `supported_minecraft_version_profiles`, and
   `candidate_minecraft_version_profiles`.

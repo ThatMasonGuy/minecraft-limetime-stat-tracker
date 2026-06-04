@@ -5,15 +5,16 @@ import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import tempeststudios.lifetimestattracker.compat.NetworkPayloadCompat;
+import tempeststudios.lifetimestattracker.compat.ServerPermissionCompat;
+import tempeststudios.lifetimestattracker.compat.ServerPathCompat;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -23,14 +24,10 @@ public class LifetimeStatTracker implements DedicatedServerModInitializer {
 
     @Override
     public void onInitializeServer() {
-        LifetimeStatTrackerNetworking.registerPayloads();
+        NetworkPayloadCompat.registerPayloads();
 
-        ServerPlayNetworking.registerGlobalReceiver(
-                LifetimeStatTrackerNetworking.WorldIdentityRequestPayload.TYPE,
-                (payload, context) -> context.server().execute(() -> sendWorldIdentity(
-                        context.player(),
-                        context.server(),
-                        "client-request-v" + payload.protocolVersion())));
+        NetworkPayloadCompat.registerServerReceiver((player, server, protocolVersion) ->
+                server.execute(() -> sendWorldIdentity(player, server, "client-request-v" + protocolVersion)));
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             ServerPlayer player = handler.player;
@@ -49,7 +46,7 @@ public class LifetimeStatTracker implements DedicatedServerModInitializer {
             Commands.CommandSelection environment) {
         dispatcher.register(Commands.literal("lstserver")
                 .requires(source -> source.getPlayer() == null
-                        || source.getServer().getPlayerList().isOp(source.getPlayer().nameAndId()))
+                        || ServerPermissionCompat.isOp(source.getServer(), source.getPlayer()))
                 .then(Commands.literal("identity")
                         .executes(ctx -> {
                             IdentityInfo identity = currentWorldIdentity(ctx.getSource().getServer());
@@ -65,8 +62,7 @@ public class LifetimeStatTracker implements DedicatedServerModInitializer {
     }
 
     private void scheduleWorldIdentity(ServerPlayer player, MinecraftServer server, int delayTicks, String reason) {
-        if (!ServerPlayNetworking.canSend(player, LifetimeStatTrackerNetworking.WorldIdentityPayload.TYPE)
-                && !ServerPlayNetworking.canSend(player, LifetimeStatTrackerNetworking.WorldIdentityV2Payload.TYPE)) {
+        if (!NetworkPayloadCompat.canSendIdentity(player)) {
             return;
         }
         SCHEDULED_SENDS.add(new ScheduledIdentitySend(player.getUUID(), server.getTickCount() + delayTicks, reason));
@@ -88,28 +84,21 @@ public class LifetimeStatTracker implements DedicatedServerModInitializer {
     }
 
     private static void sendWorldIdentity(ServerPlayer player, MinecraftServer server, String reason) {
-        boolean canSendV2 = ServerPlayNetworking.canSend(player, LifetimeStatTrackerNetworking.WorldIdentityV2Payload.TYPE);
-        boolean canSendV1 = ServerPlayNetworking.canSend(player, LifetimeStatTrackerNetworking.WorldIdentityPayload.TYPE);
-        if (!canSendV1 && !canSendV2) {
+        IdentityInfo identity = currentWorldIdentity(server);
+        int sentProtocol = NetworkPayloadCompat.sendWorldIdentity(
+                player,
+                LifetimeStatTrackerNetworking.PROTOCOL_VERSION,
+                identity.worldId(),
+                identity.displayName());
+        if (sentProtocol < 0) {
             return;
         }
 
-        IdentityInfo identity = currentWorldIdentity(server);
-        if (canSendV2) {
-            ServerPlayNetworking.send(player,
-                    new LifetimeStatTrackerNetworking.WorldIdentityV2Payload(
-                            LifetimeStatTrackerNetworking.PROTOCOL_VERSION,
-                            identity.worldId(),
-                            identity.displayName()));
-        } else {
-            ServerPlayNetworking.send(player,
-                    new LifetimeStatTrackerNetworking.WorldIdentityPayload(identity.worldId(), identity.displayName()));
-        }
         System.out.println("[LifetimeStatTracker] Sent world identity to "
                 + player.getName().getString() + ": " + identity.worldId()
                 + " (" + identity.displayName() + ")"
                 + " reason=" + reason
-                + " protocol=" + (canSendV2 ? LifetimeStatTrackerNetworking.PROTOCOL_VERSION : 0)
+                + " protocol=" + sentProtocol
                 + " idSource=" + identity.idSource()
                 + " nameSource=" + identity.nameSource());
     }
@@ -146,12 +135,9 @@ public class LifetimeStatTracker implements DedicatedServerModInitializer {
         }
 
         try {
-            Path fileName = server.getServerDirectory().getFileName();
-            if (fileName != null) {
-                String serverDir = fileName.toString();
-                if (!serverDir.isBlank()) {
-                    return new IdValue(serverDir, "serverDirectory");
-                }
+            String serverDir = ServerPathCompat.serverDirectoryName(server);
+            if (serverDir != null && !serverDir.isBlank()) {
+                return new IdValue(serverDir, "serverDirectory");
             }
         } catch (Throwable ignored) {
         }

@@ -19,14 +19,13 @@ Recommended initial release profile map:
 | Release profile | Compile anchor | Runtime claim after smoke tests | Java | Source compat group |
 | --- | --- | --- | ---: | --- |
 | `1.20-1.20.4` | `1.20` | `1.20`, `1.20.1`, `1.20.2`, `1.20.3`, `1.20.4` | 17 | `1.20-1.20.4` |
-| `1.20.5-1.21.10` | earliest or latest proven anchor | `1.20.5` through `1.21.10` | 21 | `1.20.5-1.21.10` |
+| `1.20.5-1.21.10` | `1.21.10` | `1.20.5` through `1.21.10` | 21 | `1.20.5-1.21.10` |
 | `1.21.11` | `1.21.11` | `1.21.11` | 21 | `1.21.11` |
-| `26.1-26.2-pre-3` | `26.1.2` or `26.2-pre-3`, to be proven | `26.1`, `26.1.1`, `26.1.2`, `26.2-pre-3` | 25 | `26.x` |
+| `26.1-26.2-pre-3` | `26.2-pre-3` | `26.1`, `26.1.1`, `26.1.2`, `26.2-pre-3` | 25 | `26.x` |
 
-The `1.21.11` source group can probably collapse into
-`1.20.5-1.21.10` after the stat-key and advancement-id helpers avoid direct
-`ResourceLocation`/`Identifier` return descriptors. Until that helper exists,
-keep it separate.
+Compile probes now pass for this initial four-profile map. Keep `1.21.11`
+separate as the current supported baseline until exact-version smoke tests and
+release metadata prove a broader profile can honestly cover it.
 
 The `1.20-1.20.4` release profile can stay as one profile only if its
 advancement mixin treats advancement keys as raw objects and extracts ids via a

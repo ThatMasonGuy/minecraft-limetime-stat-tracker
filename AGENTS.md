@@ -7,9 +7,9 @@ Read these files before making changes:
 1. `AGENTS.md` for workflow rules and verification expectations.
 2. `TODO.md` for the current checkpoint, confirmed behavior, and migration plan.
 3. `README.md` for the user-facing mod shape and command reference.
-4. `COMPATIBILITY.md` for the current supported target, drift points, and planned
+4. `COMPATIBILITY.md` for the current supported target, drift points, and
    source compat groups.
-5. `gradle/version-profiles/README.md` for the planned multi-version profile
+5. `gradle/version-profiles/README.md` for the active multi-version profile
    model, Java toolchains, compat overlays, and candidate-vs-supported rules.
 6. `gradle/smoke-tests.md` for the planned local and CI smoke-test gates.
 7. `gradle/modrinth-publishing.md` for release notes, secrets, dry runs, and

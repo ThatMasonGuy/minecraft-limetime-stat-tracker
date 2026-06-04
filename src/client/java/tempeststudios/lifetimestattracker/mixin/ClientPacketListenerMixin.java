@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import tempeststudios.lifetimestattracker.LifetimeStatsManager;
+import tempeststudios.lifetimestattracker.compat.client.StatsPacketCompat;
 
 @Mixin(ClientPacketListener.class)
 public class ClientPacketListenerMixin {
@@ -21,7 +22,7 @@ public class ClientPacketListenerMixin {
             CallbackInfo ci) {
         Minecraft.getInstance().execute(() -> {
             try {
-                Object2IntMap<Stat<?>> stats = packet.stats();
+                Object2IntMap<Stat<?>> stats = StatsPacketCompat.stats(packet);
                 LifetimeStatsManager.get().onStatsPacket(stats);
             } catch (Throwable t) {
                 System.out.println("[LifetimeStatTracker] Failed to read stats packet: " + t);

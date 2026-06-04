@@ -1,7 +1,7 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: Version-profile foundation implemented; compatibility
-adapters are next
+Current checkpoint: Compatibility adapters implemented; compile validation is
+green for the supported profile and current candidates
 
 ## Project Workflow
 
@@ -84,8 +84,18 @@ adapters are next
      can configure.
    - Verified `.\gradlew.bat build --no-daemon --console=plain`,
      `.\gradlew.bat buildAllVersions --no-daemon --console=plain`, and
-     `printVersionProfile` for all candidate profiles. Candidate compile builds
-     still wait on compatibility adapters.
+     `printVersionProfile` for all candidate profiles.
+4. Compatibility adapter layer:
+   - Added profile-selected compatibility overlays for stat packet extraction,
+     custom world-identity networking, and client command factories.
+   - Added descriptor-safe shared helpers for advancement ids, registry keys,
+     server directory names, server op checks, and optional integrated-world
+     seed migration.
+   - Added Java toolchain wiring so Java 17, Java 21, and Java 25 profiles
+     compile with the active profile's requested JDK.
+   - Verified `.\gradlew.bat buildValidationVersions --no-daemon --console=plain`
+     across `1.21.11`, `1.20-1.20.4`, `1.20.5-1.21.10`, and
+     `26.1-26.2-pre-3`.
 
 ## Current Compatibility Conclusion
 
@@ -99,16 +109,16 @@ Use this initial map for the profile implementation:
 - Release profile `1.20-1.20.4` uses source compat group `1.20-1.20.4`.
 - Release profile `1.20.5-1.21.10` uses source compat group
   `1.20.5-1.21.10`.
-- Release profile `1.21.11` stays separate until `Registry#getKey(...)` and
-  advancement id extraction are descriptor-safe across `ResourceLocation` and
-  `Identifier`.
+- Release profile `1.21.11` stays separate as the current supported baseline;
+  descriptor-safe helpers now exist, so a later release-planning pass can decide
+  whether it should collapse into a broader tested profile.
 - Release profile `26.1-26.2-pre-3` uses source compat group `26.x`.
 
 Do not over-split by copying Inventory Sort's GUI-driven groups unless compile
 probes, binary runtime checks, dependency metadata, or smoke tests show a real
 Lifetime Stat Tracker break that prevents one jar from covering the combined
-range. The first implementation pass should add the profile system, then the
-adapter layer, then compile probes for the groups above.
+range. The first implementation pass now compiles for all four profiles; the
+next evidence gate is exact-version launcher smoke testing.
 
 ## Migration Goal
 
@@ -168,7 +178,8 @@ every exact Minecraft version listed in `modrinth_game_versions`.
      starting point.
    - Record failures by API surface rather than by raw compiler error only.
    - Split or merge profile groups based on evidence.
-   - Current status: drift audit complete; build-profile probes still TODO.
+   - Current status: DONE for the current four-profile compile matrix via
+     `buildValidationVersions`; exact-version runtime smoke probes still TODO.
 5. Compatibility shims:
    - Keep shared behavior in `src/main/java` and `src/client/java`.
    - Add `src/compat/<compat_group>/main/java` or
@@ -179,14 +190,16 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Prioritize `StatsPacketCompat`, `AdvancementIdCompat`,
      `RegistryKeyCompat`, `NetworkPayloadCompat`, `ClientCommandCompat`, and
      `ServerPathCompat`.
-   - Current status: TODO.
+   - Current status: DONE for the current compile matrix. Keep adding only
+     small adapters if future compile or smoke probes prove another split.
 6. Java toolchains and CI:
    - Configure Java 17 for `1.20-1.20.4`, Java 21 for `1.20.5+` and `1.21.x`,
      and Java 25 for `26.x`.
    - Keep regular push/PR CI on a fast default-profile build.
    - Add a manual compatibility validation workflow for targeted profiles.
-   - Current status: Gradle wrapper upgraded to `9.4.0` and profile Java release
-     values are wired; full toolchain and CI workflows TODO.
+   - Current status: Gradle wrapper upgraded to `9.4.0`, profile Java release
+     values are wired, and Gradle toolchains are active locally; CI workflows
+     still TODO.
 7. Minecraft `26.x` build lane:
    - Reuse Inventory Sort's proven model where applicable: non-remapping Loom
      for `26.x`, normal dependencies, and plain jar artifacts.
@@ -196,8 +209,9 @@ every exact Minecraft version listed in `modrinth_game_versions`.
      compile anchors, or smoke tests prove that one jar cannot cover both.
    - Probe payload, command, packet, advancement, registry key, and server
      reflection APIs under `26.1.2` and `26.2-pre-3`.
-   - Current status: profile config resolves under Loom `1.16`; source
-     compatibility and compile probes TODO.
+   - Current status: profile config resolves under Loom `1.16`, Java 25
+     toolchain compile passes, and source compatibility probes are green for
+     the current `26.2-pre-3` compile anchor. Launcher smoke probes still TODO.
 8. Smoke-test automation:
    - Add a minimal client smoke launcher that installs the packaged release jar,
      reaches the client tick loop, force-loads mixin targets, and exits with a

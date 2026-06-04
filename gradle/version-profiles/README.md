@@ -2,8 +2,8 @@
 
 This directory contains the multi-version profile metadata used by Gradle. The
 current supported build remains Minecraft `1.21.11`; broader profiles are
-candidates until compatibility adapters, compile probes, and smoke tests prove
-them.
+candidates until metadata checks and smoke tests prove them. Current candidate
+compile probes pass through `buildValidationVersions`.
 
 ## Goal
 
@@ -57,7 +57,8 @@ unobfuscated_minecraft=false
   jar after smoke testing.
 - `compat_group` selects any version-specific source overlay.
 - `java_version` selects the Java compile release and generated Mixin
-  compatibility level. Full toolchain workflow wiring is still planned.
+  compatibility level. Gradle requests the matching Java toolchain for compile
+  and JavaExec tasks.
 - `unobfuscated_minecraft=true` is expected only for Minecraft `26.x` profiles
   if this repo follows Inventory Sort's non-remap build lane.
 
@@ -75,8 +76,8 @@ Current profile-foundation commands:
 
 `buildAllVersions` builds only profiles listed in
 `supported_minecraft_version_profiles`, which is currently just `1.21.11`.
-`buildValidationVersions` includes candidates and is expected to fail until the
-compatibility adapter layer exists.
+`buildValidationVersions` includes candidates and currently passes for the
+initial four-profile compile matrix.
 
 Baseline command:
 

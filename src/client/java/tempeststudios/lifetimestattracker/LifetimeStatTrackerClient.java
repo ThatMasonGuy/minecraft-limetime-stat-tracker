@@ -4,16 +4,17 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import tempeststudios.lifetimestattracker.compat.NetworkPayloadCompat;
+import tempeststudios.lifetimestattracker.compat.client.ClientCommandCompat;
+import tempeststudios.lifetimestattracker.compat.client.ClientNetworkPayloadCompat;
 
 import java.util.Map;
 import java.util.Set;
@@ -26,21 +27,9 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        LifetimeStatTrackerNetworking.registerPayloads();
+        NetworkPayloadCompat.registerPayloads();
+        ClientNetworkPayloadCompat.registerClientReceivers();
         LifetimeStatsManager.get().init();
-
-        ClientPlayNetworking.registerGlobalReceiver(
-                LifetimeStatTrackerNetworking.WorldIdentityPayload.TYPE,
-                (payload, context) -> context.client().execute(() -> {
-                    LifetimeStatsManager.get().onServerWorldIdentity(payload.worldId(), payload.displayName());
-                    LifetimeStatsManager.get().requestStatsNow("server-world-identity", true);
-                }));
-        ClientPlayNetworking.registerGlobalReceiver(
-                LifetimeStatTrackerNetworking.WorldIdentityV2Payload.TYPE,
-                (payload, context) -> context.client().execute(() -> {
-                    LifetimeStatsManager.get().onServerWorldIdentity(payload.worldId(), payload.displayName());
-                    LifetimeStatsManager.get().requestStatsNow("server-world-identity-v" + payload.protocolVersion(), true);
-                }));
 
         // Register commands
         ClientCommandRegistrationCallback.EVENT.register(this::registerCommands);
@@ -105,12 +94,9 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
 
     private void requestServerWorldIdentity(String reason) {
         try {
-            if (!ClientPlayNetworking.canSend(LifetimeStatTrackerNetworking.WorldIdentityRequestPayload.TYPE)) {
-                return;
+            if (ClientNetworkPayloadCompat.requestServerWorldIdentity(LifetimeStatTrackerNetworking.PROTOCOL_VERSION)) {
+                System.out.println("[LifetimeStatTracker] Requested server world identity (" + reason + ")");
             }
-            ClientPlayNetworking.send(new LifetimeStatTrackerNetworking.WorldIdentityRequestPayload(
-                LifetimeStatTrackerNetworking.PROTOCOL_VERSION));
-            System.out.println("[LifetimeStatTracker] Requested server world identity (" + reason + ")");
         } catch (Throwable t) {
             System.out.println("[LifetimeStatTracker] Failed to request server world identity: " + t);
         }
@@ -118,63 +104,63 @@ public class LifetimeStatTrackerClient implements ClientModInitializer {
 
     private void registerCommands(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandBuildContext registryAccess) {
         dispatcher.register(
-            ClientCommandManager.literal("lifetimestats")
+            ClientCommandCompat.literal("lifetimestats")
                 .executes(this::showSummary)
-                .then(ClientCommandManager.literal("time")
+                .then(ClientCommandCompat.literal("time")
                     .executes(this::showPlayTime))
-                .then(ClientCommandManager.literal("worlds")
+                .then(ClientCommandCompat.literal("worlds")
                     .executes(this::showWorlds))
-                .then(ClientCommandManager.literal("world")
-                    .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                .then(ClientCommandCompat.literal("world")
+                    .then(ClientCommandCompat.argument("name", StringArgumentType.greedyString())
                         .executes(this::showWorldStats)))
-                .then(ClientCommandManager.literal("seed")
-                    .then(ClientCommandManager.literal("world")
-                        .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                .then(ClientCommandCompat.literal("seed")
+                    .then(ClientCommandCompat.literal("world")
+                        .then(ClientCommandCompat.argument("name", StringArgumentType.greedyString())
                             .executes(this::seedWorld))))
-                .then(ClientCommandManager.literal("remove")
-                    .then(ClientCommandManager.literal("world")
-                        .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                .then(ClientCommandCompat.literal("remove")
+                    .then(ClientCommandCompat.literal("world")
+                        .then(ClientCommandCompat.argument("name", StringArgumentType.greedyString())
                             .executes(this::removeWorld))))
-                .then(ClientCommandManager.literal("advancements")
+                .then(ClientCommandCompat.literal("advancements")
                     .executes(this::showAdvancements))
-                .then(ClientCommandManager.literal("current")
+                .then(ClientCommandCompat.literal("current")
                     .executes(this::showCurrentWorld))
-                .then(ClientCommandManager.literal("debug")
+                .then(ClientCommandCompat.literal("debug")
                     .executes(this::showDebug))
-                .then(ClientCommandManager.literal("clear")
+                .then(ClientCommandCompat.literal("clear")
                     .executes(this::clearStoredData))
-                .then(ClientCommandManager.literal("help")
+                .then(ClientCommandCompat.literal("help")
                     .executes(this::showHelp))
         );
 
         // Short alias
         dispatcher.register(
-            ClientCommandManager.literal("lst")
+            ClientCommandCompat.literal("lst")
                 .executes(this::showSummary)
-                .then(ClientCommandManager.literal("time")
+                .then(ClientCommandCompat.literal("time")
                     .executes(this::showPlayTime))
-                .then(ClientCommandManager.literal("worlds")
+                .then(ClientCommandCompat.literal("worlds")
                     .executes(this::showWorlds))
-                .then(ClientCommandManager.literal("world")
-                    .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                .then(ClientCommandCompat.literal("world")
+                    .then(ClientCommandCompat.argument("name", StringArgumentType.greedyString())
                         .executes(this::showWorldStats)))
-                .then(ClientCommandManager.literal("seed")
-                    .then(ClientCommandManager.literal("world")
-                        .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                .then(ClientCommandCompat.literal("seed")
+                    .then(ClientCommandCompat.literal("world")
+                        .then(ClientCommandCompat.argument("name", StringArgumentType.greedyString())
                             .executes(this::seedWorld))))
-                .then(ClientCommandManager.literal("remove")
-                    .then(ClientCommandManager.literal("world")
-                        .then(ClientCommandManager.argument("name", StringArgumentType.greedyString())
+                .then(ClientCommandCompat.literal("remove")
+                    .then(ClientCommandCompat.literal("world")
+                        .then(ClientCommandCompat.argument("name", StringArgumentType.greedyString())
                             .executes(this::removeWorld))))
-                .then(ClientCommandManager.literal("advancements")
+                .then(ClientCommandCompat.literal("advancements")
                     .executes(this::showAdvancements))
-                .then(ClientCommandManager.literal("current")
+                .then(ClientCommandCompat.literal("current")
                     .executes(this::showCurrentWorld))
-                .then(ClientCommandManager.literal("debug")
+                .then(ClientCommandCompat.literal("debug")
                     .executes(this::showDebug))
-                .then(ClientCommandManager.literal("clear")
+                .then(ClientCommandCompat.literal("clear")
                     .executes(this::clearStoredData))
-                .then(ClientCommandManager.literal("help")
+                .then(ClientCommandCompat.literal("help")
                     .executes(this::showHelp))
         );
     }
