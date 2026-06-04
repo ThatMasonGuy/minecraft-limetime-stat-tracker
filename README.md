@@ -204,6 +204,17 @@ The built jar is written to:
 build/libs/
 ```
 
+## Project Docs
+
+- `AGENTS.md` - fresh-agent workflow, verification ladder, and checkpoint rules
+- `TODO.md` - current state, migration roadmap, and compatibility backlog
+- `CHANGELOG.md` - repo-facing engineering history
+- `COMPATIBILITY.md` - current `1.21.11` baseline and planned multi-version strategy
+- `gradle/compatibility-release-playbook.md` - reusable compatibility-group pipeline plan
+- `gradle/version-profiles/README.md` - planned profile metadata model
+- `gradle/smoke-tests.md` - planned launcher smoke-test gate
+- `gradle/modrinth-publishing.md` - planned guarded publishing rules
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
