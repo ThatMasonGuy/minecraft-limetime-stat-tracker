@@ -1,17 +1,13 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: GitHub Actions has published `2.7.1` for every supported
+Current checkpoint: GitHub Actions has published `2.8.0` for every supported
 compatibility-group profile from Minecraft `1.20` through `26.2-pre-3`.
-Workflow run `26943407860` passed both client and dedicated-server packaged-jar
+Workflow run `27083542931` passed both client and dedicated-server packaged-jar
 smoke launches for every exact runtime listed by the four supported profiles
-before upload. The release is live on Modrinth as version ids `qYHIQ8Sd`,
-`n6br1EMY`, `zgxySlhY`, and `b0rtBSzi`. Annotated Git tag `v2.7.1` and the
+before upload. The release is live on Modrinth as version ids `V3VoLsSk`,
+`dzqk8kHN`, `CbC3i6YC`, and `Jqbl1MUu`. Annotated Git tag `v2.8.0` and the
 matching GitHub Release point at publish source commit
-`ea929a91e23fdaafbbeea19733a3136ad1a06b10`.
-
-Local development is now preparing `2.8.0`, starting with a storage-location
-migration that writes tracker JSON to a fixed per-user app-data folder outside
-all launcher-specific `.minecraft` folders.
+`0856f289588256b2a68011c1eb3b64319bf2d96f`.
 
 ## Project Workflow
 
@@ -268,8 +264,6 @@ all launcher-specific `.minecraft` folders.
      accidental duplicate counting from another launcher folder.
    - Verified `git diff --check` and
      `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
-   - Next release step: run the full smoke-gated `publishValidation` path before
-     preparing a guarded Modrinth upload.
 17. Modrinth project-page install note update:
    - Updated `gradle/modrinth-project-pages.md` so the Install note explains
      that the mod reads client stat packets, writes JSON to the fixed app-data
@@ -278,6 +272,19 @@ all launcher-specific `.minecraft` folders.
    - Updated the live Modrinth project page through the Modrinth API with
      readback verification.
    - Saved before/after API snapshots under ignored `build/modrinth/` artifacts.
+18. `2.8.0` launcher-agnostic storage release:
+   - Pushed publish source commit `0856f28` to `main`.
+   - Ran guarded live Modrinth publish workflow `27083542931` from commit
+     `0856f289588256b2a68011c1eb3b64319bf2d96f`.
+   - The workflow passed client and dedicated-server smoke launches for every
+     exact runtime listed by the supported profiles before upload.
+   - Published the compatibility-group Modrinth versions:
+     - `2.8.0+mc1.20-1.20.4` as Modrinth version `V3VoLsSk`.
+     - `2.8.0+mc1.20.5-1.21.10` as Modrinth version `dzqk8kHN`.
+     - `2.8.0+mc1.21.11` as Modrinth version `CbC3i6YC`.
+     - `2.8.0+mc26.1-26.2-pre-3` as Modrinth version `Jqbl1MUu`.
+   - Created annotated tag `v2.8.0` and GitHub Release
+     `Lifetime Stat Tracker 2.8.0`, both pointing at the publish source commit.
 
 ## Current Compatibility Conclusion
 
@@ -435,7 +442,7 @@ every exact Minecraft version listed in `modrinth_game_versions`.
    - Promote only smoke-passed groups into `supported_minecraft_version_profiles`.
    - Run the guarded publish workflow when release approval is given.
    - Current status: all four release profiles are promoted, and the guarded
-     all-profile Modrinth publish workflow has uploaded the `2.7.1+mc...`
+     all-profile Modrinth publish workflow has uploaded the `2.8.0+mc...`
      compatibility entries after client and dedicated-server smoke validation.
 
 ## Compatibility Risk Surfaces

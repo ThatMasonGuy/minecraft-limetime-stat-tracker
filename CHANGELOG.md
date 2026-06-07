@@ -93,6 +93,16 @@ All notable project changes will be documented here.
 - Updated the Modrinth project-page Install note source copy and live project
   page to explain stat-packet tracking, fixed app-data storage, cross-launcher
   history, and the guarded legacy data copy.
+- Published the validated `2.8.0+mc...` compatibility-group Modrinth versions
+  through GitHub Actions run `27083542931`, after every exact supported runtime
+  passed both client and dedicated-server packaged-jar smoke launches:
+  - `2.8.0+mc1.20-1.20.4` as Modrinth version `V3VoLsSk`.
+  - `2.8.0+mc1.20.5-1.21.10` as Modrinth version `dzqk8kHN`.
+  - `2.8.0+mc1.21.11` as Modrinth version `CbC3i6YC`.
+  - `2.8.0+mc26.1-26.2-pre-3` as Modrinth version `Jqbl1MUu`.
+- Created annotated tag `v2.8.0` and GitHub Release
+  `Lifetime Stat Tracker 2.8.0` at publish source commit
+  `0856f289588256b2a68011c1eb3b64319bf2d96f`.
 - Upgraded the Gradle wrapper to `9.4.0` so the `26.x` Loom `1.16` profile can
   configure.
 - Configured Gradle Java toolchains from the active profile so Java 17, Java 21,
