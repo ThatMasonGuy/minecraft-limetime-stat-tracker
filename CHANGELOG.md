@@ -90,6 +90,9 @@ All notable project changes will be documented here.
   global data already exists to avoid accidental duplicate counting.
 - Verified the storage migration with `git diff --check` and
   `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
+- Updated the Modrinth project-page Install note source copy and live project
+  page to explain stat-packet tracking, fixed app-data storage, cross-launcher
+  history, and the guarded legacy data copy.
 - Upgraded the Gradle wrapper to `9.4.0` so the `26.x` Loom `1.16` profile can
   configure.
 - Configured Gradle Java toolchains from the active profile so Java 17, Java 21,

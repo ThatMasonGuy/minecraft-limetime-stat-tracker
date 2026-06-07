@@ -55,6 +55,14 @@ send the client a reliable world identity.
 Install Fabric Loader, Fabric API, and the Lifetime Stat Tracker jar that
 matches your Minecraft version.
 
+Lifetime Stat Tracker reads the stats Minecraft sends to your client and saves
+JSON history in a fixed per-user app-data folder outside `.minecraft`. This
+keeps one lifetime history across different launchers and launcher instances.
+When upgrading from an older release, the mod copies existing
+`.minecraft/config/lifetime-stat-tracker/` data into that app-data folder on
+first run if the app-data folder is still empty; old files are left in place as
+a backup.
+
 The mod does not require a server install to be useful. Client-only installs
 work for singleplayer, LAN, Realms, and multiplayer, but unmodded servers and
 Realms cannot reliably expose their internal world identity to the client. In

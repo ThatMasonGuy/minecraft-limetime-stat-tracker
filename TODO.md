@@ -270,6 +270,14 @@ all launcher-specific `.minecraft` folders.
      `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
    - Next release step: run the full smoke-gated `publishValidation` path before
      preparing a guarded Modrinth upload.
+17. Modrinth project-page install note update:
+   - Updated `gradle/modrinth-project-pages.md` so the Install note explains
+     that the mod reads client stat packets, writes JSON to the fixed app-data
+     folder outside `.minecraft`, shares data across launchers, and copies
+     legacy launcher-local data only when the app-data folder is empty.
+   - Updated the live Modrinth project page through the Modrinth API with
+     readback verification.
+   - Saved before/after API snapshots under ignored `build/modrinth/` artifacts.
 
 ## Current Compatibility Conclusion
 
