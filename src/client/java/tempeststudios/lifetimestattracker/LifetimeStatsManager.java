@@ -13,12 +13,16 @@ import net.minecraft.stats.StatType;
 import tempeststudios.lifetimestattracker.compat.ServerPathCompat;
 import tempeststudios.lifetimestattracker.compat.client.RegistryKeyCompat;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class LifetimeStatsManager {
 
@@ -27,6 +31,12 @@ public class LifetimeStatsManager {
     private static final String SNAPSHOTS_FILE = "snapshots.json";
     private static final String ADVANCEMENTS_FILE = "advancements.json";
     private static final String WORLD_STATS_FILE = "world_stats.json";
+    private static final String[] DATA_FILES = {
+            TOTALS_FILE,
+            SNAPSHOTS_FILE,
+            ADVANCEMENTS_FILE,
+            WORLD_STATS_FILE
+    };
     private static final String AGGREGATE_WORLD_ID = "aggregate";
     private static final String MANUAL_WORLD_MARKER = ":manual:";
 
@@ -120,6 +130,7 @@ public class LifetimeStatsManager {
             return;
         initialized = true;
 
+        migrateLegacyConfigDataIfNeeded();
         ensureFilesExist();
         loadTotals();
         loadSnapshots();
@@ -985,8 +996,39 @@ public class LifetimeStatsManager {
     }
 
     public Path getModDir() {
-        Path configDir = FabricLoader.getInstance().getConfigDir();
-        return configDir.resolve(MOD_FOLDER);
+        return resolveGlobalDataDir();
+    }
+
+    private Path getLegacyModDir() {
+        return FabricLoader.getInstance().getConfigDir().resolve(MOD_FOLDER);
+    }
+
+    private static Path resolveGlobalDataDir() {
+        String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        String home = System.getProperty("user.home", "");
+
+        if (osName.contains("win")) {
+            String appData = System.getenv("APPDATA");
+            if (appData != null && !appData.isBlank()) {
+                return Path.of(appData, "LifetimeStatTracker");
+            }
+        }
+
+        if (osName.contains("mac")) {
+            if (home != null && !home.isBlank()) {
+                return Path.of(home, "Library", "Application Support", "LifetimeStatTracker");
+            }
+        } else {
+            String xdgDataHome = System.getenv("XDG_DATA_HOME");
+            if (xdgDataHome != null && !xdgDataHome.isBlank()) {
+                return Path.of(xdgDataHome, MOD_FOLDER);
+            }
+            if (home != null && !home.isBlank()) {
+                return Path.of(home, ".local", "share", MOD_FOLDER);
+            }
+        }
+
+        return Path.of(MOD_FOLDER).toAbsolutePath();
     }
 
     private Path getTotalsPath() {
@@ -1003,6 +1045,99 @@ public class LifetimeStatsManager {
 
     private Path getWorldStatsPath() {
         return getModDir().resolve(WORLD_STATS_FILE);
+    }
+
+    private void migrateLegacyConfigDataIfNeeded() {
+        Path legacyDir = getLegacyModDir();
+        Path dataDir = getModDir();
+        if (samePath(legacyDir, dataDir) || !hasTrackedData(legacyDir)) {
+            return;
+        }
+
+        if (hasTrackedData(dataDir)) {
+            System.out.println("[LifetimeStatTracker] Found launcher-local data at "
+                    + legacyDir.toAbsolutePath()
+                    + " but global data already exists at "
+                    + dataDir.toAbsolutePath()
+                    + "; leaving legacy data untouched.");
+            return;
+        }
+
+        try {
+            Files.createDirectories(dataDir);
+            for (String fileName : DATA_FILES) {
+                Path source = legacyDir.resolve(fileName);
+                if (Files.exists(source)) {
+                    Files.copy(source, dataDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+            copyDirectoryIfExists(legacyDir.resolve("backups"), dataDir.resolve("backups"));
+            System.out.println("[LifetimeStatTracker] Migrated launcher-local data from "
+                    + legacyDir.toAbsolutePath()
+                    + " to "
+                    + dataDir.toAbsolutePath()
+                    + ". Old files were left untouched.");
+        } catch (Exception e) {
+            System.out.println("[LifetimeStatTracker] Failed to migrate launcher-local data from "
+                    + legacyDir.toAbsolutePath()
+                    + " to "
+                    + dataDir.toAbsolutePath()
+                    + ": "
+                    + e.getMessage());
+        }
+    }
+
+    private static boolean samePath(Path first, Path second) {
+        return first.toAbsolutePath().normalize().equals(second.toAbsolutePath().normalize());
+    }
+
+    private static boolean hasTrackedData(Path dir) {
+        for (String fileName : DATA_FILES) {
+            if (hasNonEmptyJsonData(dir.resolve(fileName))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasNonEmptyJsonData(Path path) {
+        if (!Files.isRegularFile(path)) {
+            return false;
+        }
+        try {
+            String json = Files.readString(path, StandardCharsets.UTF_8).trim();
+            return !json.isEmpty() && !json.equals("{}");
+        } catch (Exception ignored) {
+            return true;
+        }
+    }
+
+    private static void copyDirectoryIfExists(Path sourceDir, Path targetDir) throws IOException {
+        if (!Files.isDirectory(sourceDir)) {
+            return;
+        }
+
+        try (Stream<Path> paths = Files.walk(sourceDir)) {
+            try {
+                paths.forEach(source -> copyPath(sourceDir, source, targetDir));
+            } catch (UncheckedIOException e) {
+                throw e.getCause();
+            }
+        }
+    }
+
+    private static void copyPath(Path sourceDir, Path source, Path targetDir) {
+        try {
+            Path target = targetDir.resolve(sourceDir.relativize(source));
+            if (Files.isDirectory(source)) {
+                Files.createDirectories(target);
+            } else {
+                Files.createDirectories(target.getParent());
+                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private void ensureFilesExist() {

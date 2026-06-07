@@ -19,9 +19,9 @@ statistics across worlds, servers, Realms, deleted saves, and resets.
 
 Minecraft normally stores stats per world. If a world is renamed, replaced,
 deleted, or reset, that history can disappear. Lifetime Stat Tracker keeps a
-separate local record in your config folder, so play time, deaths, distance
-travelled, mob kills, jumps, and advancement progress can keep building over
-time.
+separate local record in a fixed per-user app-data folder outside `.minecraft`,
+so play time, deaths, distance travelled, mob kills, jumps, and advancement
+progress can keep building over time even when you use different launchers.
 
 It works client-side for singleplayer, LAN, Realms, and multiplayer servers.
 For unmodded servers, it tracks a safe server-level aggregate so stats are not
@@ -39,7 +39,7 @@ send the client a reliable world identity.
 - Client-only support for singleplayer, Realms, LAN, and multiplayer
 - Optional server install for reliable per-world Fabric server identity
 - Manual tools for correcting ambiguous unmodded server tracking
-- Local JSON storage with backups for destructive commands
+- Launcher-agnostic local JSON storage with backups for destructive commands
 
 ## Good for
 

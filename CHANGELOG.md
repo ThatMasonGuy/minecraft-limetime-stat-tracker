@@ -79,6 +79,17 @@ All notable project changes will be documented here.
 
 ### Changed
 
+- Bumped the prepared Modrinth release version to `2.8.0`.
+- Moved runtime persistence from Fabric's launcher-local config directory to a
+  fixed per-user app-data directory outside `.minecraft`, so multiple launchers
+  and launcher instances can share one tracker history.
+- Added guarded first-run migration from
+  `.minecraft/config/lifetime-stat-tracker/` into the fixed app-data directory
+  when the app-data directory does not already contain tracker data. Legacy
+  launcher-local files are left untouched, and automatic import is skipped when
+  global data already exists to avoid accidental duplicate counting.
+- Verified the storage migration with `git diff --check` and
+  `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
 - Upgraded the Gradle wrapper to `9.4.0` so the `26.x` Loom `1.16` profile can
   configure.
 - Configured Gradle Java toolchains from the active profile so Java 17, Java 21,

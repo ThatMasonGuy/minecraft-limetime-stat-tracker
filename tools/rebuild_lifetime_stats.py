@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 Rebuild Lifetime Stat Tracker JSON files from backed-up Minecraft worlds.
 
 Run this on the server that has access to the world folders, for example:
@@ -12,8 +12,10 @@ Run this on the server that has access to the world folders, for example:
     --exclude-world Hardcore_World_14 \
     --exclude-world Shared_Health_Hardcore_18
 
-Then copy the generated JSON files into the client config folder:
-  config/lifetime-stat-tracker/
+Then copy the generated JSON files into the Lifetime Stat Tracker data folder:
+  Windows: %APPDATA%\LifetimeStatTracker\
+  macOS:   ~/Library/Application Support/LifetimeStatTracker/
+  Linux:   $XDG_DATA_HOME/lifetime-stat-tracker/ or ~/.local/share/lifetime-stat-tracker/
 """
 
 from __future__ import annotations
@@ -131,7 +133,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--seed-lst-dir",
         type=Path,
-        help="Existing LST config folder to seed from before importing old worlds.",
+        help="Existing LST data folder to seed from before importing old worlds.",
     )
     parser.add_argument(
         "--exclude-world",

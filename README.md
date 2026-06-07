@@ -3,7 +3,10 @@
 A Fabric mod for Minecraft `1.20` through `26.2-pre-3` that tracks lifetime
 stats across worlds, servers, Realms, and deleted saves.
 
-Unlike vanilla per-world stats, Lifetime Stat Tracker keeps cumulative totals in your config folder so progress is preserved even if worlds are renamed, deleted, or moved.
+Unlike vanilla per-world stats, Lifetime Stat Tracker keeps cumulative totals in
+a fixed per-user app-data folder so progress is preserved even if worlds are
+renamed, deleted, moved, or played through different launcher `.minecraft`
+folders.
 
 ## Features
 
@@ -12,7 +15,7 @@ Unlike vanilla per-world stats, Lifetime Stat Tracker keeps cumulative totals in
 - Advancement tracking across tracked worlds, with recipe unlocks excluded
 - Safe support for singleplayer, modded servers, unmodded servers, and Realms
 - Manual seed/remove tools for correcting unavoidable unmodded server ambiguity
-- Persistent JSON storage in the Fabric config directory
+- Persistent JSON storage in a launcher-agnostic app-data directory
 
 ## Supported Environment
 
@@ -39,13 +42,22 @@ Unlike vanilla per-world stats, Lifetime Stat Tracker keeps cumulative totals in
 
 ## How Tracking Works
 
-The mod reads Minecraft's stat packets and stores local lifetime totals under:
+The mod reads Minecraft's stat packets and stores local lifetime totals in a
+fixed per-user folder outside `.minecraft`:
 
 ```text
-config/lifetime-stat-tracker/
+Windows: %APPDATA%\LifetimeStatTracker\
+macOS:   ~/Library/Application Support/LifetimeStatTracker/
+Linux:   $XDG_DATA_HOME/lifetime-stat-tracker/ or ~/.local/share/lifetime-stat-tracker/
 ```
 
 Stats are tracked by world/server handle, then rolled into lifetime totals.
+
+On first run after upgrading from an older release, existing data from the
+current launcher's `.minecraft/config/lifetime-stat-tracker/` folder is copied
+into the fixed app-data folder if the app-data folder does not already contain
+tracker data. The old launcher-local files are left untouched as a safety
+backup.
 
 Singleplayer worlds use a stable local save identity where possible, so renaming a world should not create a duplicate entry.
 
@@ -158,10 +170,12 @@ Prints the world identity the server is advertising to clients, including the id
 
 ## Data Files
 
-Data is stored under:
+Data is stored outside `.minecraft` under:
 
 ```text
-.minecraft/config/lifetime-stat-tracker/
+Windows: %APPDATA%\LifetimeStatTracker\
+macOS:   ~/Library/Application Support/LifetimeStatTracker/
+Linux:   $XDG_DATA_HOME/lifetime-stat-tracker/ or ~/.local/share/lifetime-stat-tracker/
 ```
 
 Files:
@@ -174,7 +188,7 @@ Files:
 Commands that remove or clear data create backups under:
 
 ```text
-config/lifetime-stat-tracker/backups/
+<data folder>/backups/
 ```
 
 ## Counting Notes

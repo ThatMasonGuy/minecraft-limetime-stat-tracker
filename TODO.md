@@ -9,6 +9,10 @@ before upload. The release is live on Modrinth as version ids `qYHIQ8Sd`,
 matching GitHub Release point at publish source commit
 `ea929a91e23fdaafbbeea19733a3136ad1a06b10`.
 
+Local development is now preparing `2.8.0`, starting with a storage-location
+migration that writes tracker JSON to a fixed per-user app-data folder outside
+all launcher-specific `.minecraft` folders.
+
 ## Project Workflow
 
 - After every major change, update `TODO.md`, update `CHANGELOG.md`, verify the
@@ -29,11 +33,15 @@ matching GitHub Release point at publish source commit
   multiplayer, and Realms.
 - Optional server install improves per-world server identity by sending a custom
   world identity payload to the client.
-- Runtime persistence is under `config/lifetime-stat-tracker/`.
+- Runtime persistence is under a fixed per-user app-data directory outside
+  `.minecraft`: `%APPDATA%\LifetimeStatTracker\` on Windows,
+  `~/Library/Application Support/LifetimeStatTracker/` on macOS, and
+  `$XDG_DATA_HOME/lifetime-stat-tracker/` or
+  `~/.local/share/lifetime-stat-tracker/` on Linux.
 - Data files are `totals.json`, `snapshots.json`, `world_stats.json`, and
   `advancements.json`.
 - Backup-backed destructive operations write under
-  `config/lifetime-stat-tracker/backups/`.
+  `<data folder>/backups/`.
 - The helper script `tools/rebuild_lifetime_stats.py` can rebuild tracker JSON
   from backed-up Minecraft world `stats` and `advancements` files.
 
@@ -248,6 +256,20 @@ matching GitHub Release point at publish source commit
      - `2.7.1+mc26.1-26.2-pre-3` as Modrinth version `b0rtBSzi`.
    - Created annotated tag `v2.7.1` and GitHub Release
      `Lifetime Stat Tracker 2.7.1`, both pointing at the publish source commit.
+16. Launcher-agnostic data storage:
+   - Bumped the development version to `2.8.0`.
+   - Changed runtime persistence from Fabric's launcher-local config directory
+     to a fixed per-user app-data directory outside `.minecraft`.
+   - Added guarded first-run migration from
+     `.minecraft/config/lifetime-stat-tracker/` into the app-data directory
+     when the app-data directory does not already contain tracker data.
+   - Left legacy launcher-local files untouched during migration to avoid data
+     loss, and skipped automatic import when global data already exists to avoid
+     accidental duplicate counting from another launcher folder.
+   - Verified `git diff --check` and
+     `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
+   - Next release step: run the full smoke-gated `publishValidation` path before
+     preparing a guarded Modrinth upload.
 
 ## Current Compatibility Conclusion
 
