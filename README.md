@@ -4,9 +4,9 @@ A Fabric mod for Minecraft `1.20` through `26.2-pre-3` that tracks lifetime
 stats across worlds, servers, Realms, and deleted saves.
 
 Unlike vanilla per-world stats, Lifetime Stat Tracker keeps cumulative totals in
-a shared per-user Tempest Studios data folder, separated by Minecraft instance
-and player profile, so progress is preserved without merging unrelated
-accounts or same-named worlds from different installations.
+a shared per-user Tempest Studios data folder, separated by player profile, so
+one Minecraft account keeps one running total across launchers while
+singleplayer worlds from different game directories still stay distinct.
 
 ## Features
 
@@ -16,7 +16,7 @@ accounts or same-named worlds from different installations.
 - Safe support for singleplayer, modded servers, unmodded servers, and Realms
 - Manual seed/remove tools for correcting unavoidable unmodded server ambiguity
 - Persistent JSON storage in a launcher-agnostic shared data directory, scoped
-  by instance and player profile
+  by player profile with instance-aware singleplayer world handles
 
 ## Supported Environment
 
@@ -52,18 +52,20 @@ macOS:   ~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/
 Linux:   $XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/ or ~/.local/share/tempest-studios/lifetime-stat-tracker/
 ```
 
-Inside that shared root, JSON files live under
-`instances/<instance>/profiles/<player profile>/`. The instance namespace is
-based on the active Fabric game directory, and the player profile namespace is
-based on the current Minecraft profile id when available.
+Inside that shared root, JSON files live under `profiles/<player profile>/`,
+using the current Minecraft profile id when available. Singleplayer world
+handles include the active Fabric game directory namespace, so two different
+instances with a world named `world` do not collide inside the shared profile
+totals.
 
-Stats are tracked by world/server handle inside that instance/profile namespace,
-then rolled into lifetime totals for that namespace.
+Stats are tracked by world/server handle inside that player-profile namespace,
+then rolled into lifetime totals for that profile across launchers and
+instances.
 
 On first run after upgrading, existing unnamespaced data is copied into the
-active instance/profile folder if that folder does not already contain tracker
-data. The mod first checks for data already at the shared root, then the
-previous `2.8.0` app-data folder, then the current launcher's older
+active profile folder if that folder does not already contain tracker data. The
+mod first checks for data already at the shared root, then the previous `2.8.0`
+app-data folder, then the current launcher's older
 `.minecraft/config/lifetime-stat-tracker/` folder. Each legacy source is
 auto-imported only once, and legacy files are left untouched as a safety backup.
 
@@ -186,10 +188,10 @@ macOS:   ~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/
 Linux:   $XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/ or ~/.local/share/tempest-studios/lifetime-stat-tracker/
 ```
 
-Actual JSON files are stored in the active namespace:
+Actual JSON files are stored in the active profile namespace:
 
 ```text
-<shared root>/instances/<instance>/profiles/<player profile>/
+<shared root>/profiles/<player profile>/
 ```
 
 Files:

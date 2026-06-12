@@ -31,7 +31,6 @@ public class LifetimeStatsManager {
     private static final String SHARED_VENDOR_FOLDER = "TempestStudios";
     private static final String SHARED_DATA_FOLDER = "Lifetime-Stat-Tracker";
     private static final String LINUX_SHARED_VENDOR_FOLDER = "tempest-studios";
-    private static final String INSTANCES_FOLDER = "instances";
     private static final String PROFILES_FOLDER = "profiles";
     private static final String MIGRATION_CLAIMS_FOLDER = "migration-claims";
     private static final String DEFAULT_INSTANCE_NAMESPACE = "unknown-instance";
@@ -700,14 +699,16 @@ public class LifetimeStatsManager {
             return "server:" + server.ip + ":" + sanitizeHandlePart(serverWorldId);
         }
 
-        // Singleplayer / integrated: include world name + seed if possible
+        // Singleplayer / integrated: namespace local worlds by game directory.
         MinecraftServer integrated = mc.getSingleplayerServer();
         if (integrated != null) {
             try {
                 String levelName = integrated.getWorldData().getLevelName();
                 Long seed = integratedSeed(integrated);
                 String stableId = integratedLevelId(integrated);
-                String handle = "local:" + sanitizeHandlePart(stableId != null ? stableId : levelName);
+                String worldId = sanitizeHandlePart(stableId != null ? stableId : levelName);
+                String handle = "local:instance:" + currentInstanceNamespace() + ":world:" + worldId;
+                migrateLocalHandleAlias("local:" + worldId, handle);
                 if (seed != null) {
                     migrateLocalHandleAlias("local:" + levelName + ":" + seed, handle);
                 }
@@ -738,7 +739,12 @@ public class LifetimeStatsManager {
                     ? serverHandle.substring(lastSeparator + 1)
                     : serverHandle;
         } else if (handle.startsWith("local:")) {
-            String[] parts = handle.substring(6).split(":", 2);
+            String localHandle = handle.substring(6);
+            int instanceWorldSeparator = localHandle.indexOf(":world:");
+            if (localHandle.startsWith("instance:") && instanceWorldSeparator >= 0) {
+                return localHandle.substring(instanceWorldSeparator + ":world:".length());
+            }
+            String[] parts = localHandle.split(":", 2);
             return parts.length > 0 ? parts[0] : handle;
         }
         return handle;
@@ -1051,7 +1057,13 @@ public class LifetimeStatsManager {
 
     private static Path resolveNamespacedDataDir() {
         return resolveGlobalDataDir()
-                .resolve(INSTANCES_FOLDER)
+                .resolve(PROFILES_FOLDER)
+                .resolve(currentProfileNamespace());
+    }
+
+    private static Path resolveInstanceProfileDataDir() {
+        return resolveGlobalDataDir()
+                .resolve("instances")
                 .resolve(currentInstanceNamespace())
                 .resolve(PROFILES_FOLDER)
                 .resolve(currentProfileNamespace());
@@ -1170,14 +1182,20 @@ public class LifetimeStatsManager {
 
     private void migrateLegacyDataIfNeeded() {
         Path dataDir = getModDir();
+        Path instanceProfileDir = resolveInstanceProfileDataDir();
         Path unnamespacedSharedDir = resolveGlobalDataDir();
         Path previousGlobalDir = resolvePreviousGlobalDataDir();
         Path launcherLocalDir = getLegacyModDir();
 
         if (hasTrackedData(dataDir)) {
+            logMigrationSkippedBecauseTargetExists(instanceProfileDir, dataDir, "instance-scoped 2.8.1 pre-release");
             logMigrationSkippedBecauseTargetExists(unnamespacedSharedDir, dataDir, "unnamespaced shared-folder");
             logMigrationSkippedBecauseTargetExists(previousGlobalDir, dataDir, "previous app-data");
             logMigrationSkippedBecauseTargetExists(launcherLocalDir, dataDir, "launcher-local");
+            return;
+        }
+
+        if (migrateLegacyDataSourceIfNeeded(instanceProfileDir, dataDir, "instance-scoped 2.8.1 pre-release")) {
             return;
         }
 

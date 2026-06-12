@@ -3,14 +3,16 @@
 Current checkpoint: `2.8.1` patch prep is implemented and locally verified. It
 moves runtime persistence from the standalone Lifetime Stat Tracker app-data
 folder into the shared Tempest Studios app-data namespace. Actual JSON files are
-scoped under `instances/<instance>/profiles/<player profile>/` so different
-game directories and different Minecraft accounts do not merge totals,
-snapshots, advancements, or same-named local worlds. First-run migration copies
-unnamespaced shared data, then existing `2.8.0` app-data, then older
-launcher-local `.minecraft/config/lifetime-stat-tracker/` data into the active
-namespace when that namespace is empty. Each legacy source is auto-imported only
-once. Verification passed with `git diff --check` and
-`.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
+scoped under `profiles/<player profile>/`, so the same Minecraft account keeps
+one running total across launchers and instances without merging different
+player profiles. Singleplayer local-world handles include the active game
+directory namespace so same-named worlds from different instances do not
+collide. First-run migration copies unnamespaced shared data, then
+instance-scoped `2.8.1` pre-release test data, then existing `2.8.0` app-data,
+then older launcher-local `.minecraft/config/lifetime-stat-tracker/` data into
+the active player-profile namespace when that namespace is empty. Each legacy
+source is auto-imported only once. Verification passed with `git diff --check`
+and `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
 
 Last published release: GitHub Actions published `2.8.0` for every supported
 compatibility-group profile from Minecraft `1.20` through `26.2-pre-3`.
@@ -47,10 +49,13 @@ matching GitHub Release point at publish source commit
   `~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/` on
   macOS, and `$XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/` or
   `~/.local/share/tempest-studios/lifetime-stat-tracker/` on Linux.
-- Active JSON files live under
-  `<shared root>/instances/<instance>/profiles/<player profile>/`, where the
-  instance namespace is based on Fabric's active game directory and the profile
-  namespace is based on the current Minecraft profile id when available.
+- Active JSON files live under `<shared root>/profiles/<player profile>/`, where
+  the profile namespace is based on the current Minecraft profile id when
+  available.
+- Singleplayer local-world handles include the active Fabric game directory
+  namespace, preventing same-named worlds from different instances from sharing
+  one world snapshot while keeping the player profile's lifetime total merged
+  across instances.
 - Data files are `totals.json`, `snapshots.json`, `world_stats.json`, and
   `advancements.json`.
 - Backup-backed destructive operations write under
@@ -309,16 +314,19 @@ matching GitHub Release point at publish source commit
      `~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/` on
      macOS, and `$XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/` or
      `~/.local/share/tempest-studios/lifetime-stat-tracker/` on Linux.
-   - Scoped active JSON under `instances/<instance>/profiles/<player profile>/`
-     so two Minecraft accounts, or two game directories with the same local
-     world name, no longer merge totals, snapshots, world stats, or
-     advancements.
-   - Added guarded migration into the active namespace from unnamespaced shared
-     data first, then the `2.8.0` app-data folder, then older
+   - Scoped active JSON under `profiles/<player profile>/` so a Minecraft
+     account keeps one running total across launchers and instances without
+     merging different profiles.
+   - Namespaced singleplayer local-world handles by the active game directory,
+     preventing two instances with the same local world name from sharing one
+     world snapshot.
+   - Added guarded migration into the active player-profile namespace from
+     unnamespaced shared data first, then instance-scoped `2.8.1` pre-release
+     test data, then the `2.8.0` app-data folder, then older
      `.minecraft/config/lifetime-stat-tracker/` data.
    - Added migration claim markers so each legacy source is auto-imported into
-     only one namespace, while leaving every legacy source untouched as a
-     backup.
+     only one player-profile namespace, while leaving every legacy source
+     untouched as a backup.
    - Added `gradle/release-notes/2.8.1.md`.
    - Verified `git diff --check` and
      `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.

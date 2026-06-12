@@ -20,10 +20,9 @@ statistics across worlds, servers, Realms, deleted saves, and resets.
 Minecraft normally stores stats per world. If a world is renamed, replaced,
 deleted, or reset, that history can disappear. Lifetime Stat Tracker keeps a
 separate local record in a shared per-user Tempest Studios data folder outside
-`.minecraft`, with data separated by Minecraft instance and player profile, so
-play time, deaths, distance travelled, mob kills, jumps, and advancement
-progress can keep building over time without merging unrelated accounts or
-same-named worlds from different installations.
+`.minecraft`, with data separated by player profile. One Minecraft account can
+keep building the same running total across launchers, while same-named
+singleplayer worlds from different game directories stay distinct.
 
 It works client-side for singleplayer, LAN, Realms, and multiplayer servers.
 For unmodded servers, it tracks a safe server-level aggregate so stats are not
@@ -41,8 +40,8 @@ send the client a reliable world identity.
 - Client-only support for singleplayer, Realms, LAN, and multiplayer
 - Optional server install for reliable per-world Fabric server identity
 - Manual tools for correcting ambiguous unmodded server tracking
-- Launcher-agnostic shared JSON storage scoped by instance and player profile
-  with backups for destructive commands
+- Launcher-agnostic shared JSON storage scoped by player profile, with
+  instance-aware singleplayer world handles and backups for destructive commands
 
 ## Good for
 
@@ -68,14 +67,16 @@ macOS:   ~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/
 Linux:   $XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/ or ~/.local/share/tempest-studios/lifetime-stat-tracker/
 ```
 
-This keeps one lifetime history across different launchers and launcher
-instances without merging different Minecraft accounts or same-named worlds from
-different game directories. JSON files are stored under
-`instances/<instance>/profiles/<player profile>/` inside the shared root.
+This keeps one lifetime history for the same Minecraft account across different
+launchers and launcher instances without merging different Minecraft accounts.
+JSON files are stored under `profiles/<player profile>/` inside the shared root.
+Singleplayer world handles include the active game directory namespace, so two
+different instances with a world named `world` do not collide.
 
 When upgrading from older storage layouts, the mod copies existing data into the
-active instance/profile folder on first run if that folder is still empty. It
-checks unnamespaced shared-folder data first, then `2.8.0` app-data, then older
+active player-profile folder on first run if that folder is still empty. It
+checks unnamespaced shared-folder data first, then any instance-scoped `2.8.1`
+pre-release test data, then `2.8.0` app-data, then older
 `.minecraft/config/lifetime-stat-tracker/` data as a fallback. Each legacy
 source is auto-imported only once, and old files are left in place as a backup.
 

@@ -86,15 +86,18 @@ All notable project changes will be documented here.
   `~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/` on
   macOS, and `$XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/` or
   `~/.local/share/tempest-studios/lifetime-stat-tracker/` on Linux.
-- Scoped active JSON files under
-  `instances/<instance>/profiles/<player profile>/` inside the shared folder so
-  different game directories and different Minecraft player profiles do not
-  merge totals, snapshots, advancements, or same-named local worlds.
-- Added guarded first-run migration into the active namespace from unnamespaced
-  shared-folder data first, then the `2.8.0` app-data folder, then older
+- Scoped active JSON files under `profiles/<player profile>/` inside the shared
+  folder so a Minecraft account keeps one running total across launchers and
+  instances without merging different player profiles.
+- Namespaced singleplayer local-world handles by the active game directory so
+  same-named worlds from different instances no longer collide inside the shared
+  player-profile totals.
+- Added guarded first-run migration into the active player-profile namespace
+  from unnamespaced shared-folder data first, then instance-scoped `2.8.1`
+  pre-release test data, then the `2.8.0` app-data folder, then older
   launcher-local `.minecraft/config/lifetime-stat-tracker/` data.
 - Added migration claim markers so each unnamespaced legacy source is
-  auto-imported into only one instance/profile namespace.
+  auto-imported into only one player-profile namespace.
 - Verified the `2.8.1` storage namespace patch with `git diff --check` and
   `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
 - Bumped the prepared Modrinth release version to `2.8.0`.
