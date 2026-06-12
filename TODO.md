@@ -1,27 +1,15 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: `2.8.1` patch prep is implemented and locally verified. It
-moves runtime persistence from the standalone Lifetime Stat Tracker app-data
-folder into the shared Tempest Studios app-data namespace. Actual JSON files are
-scoped under `profiles/<player profile>/`, so the same Minecraft account keeps
-one running total across launchers and instances without merging different
-player profiles. Singleplayer local-world handles include the active game
-directory namespace so same-named worlds from different instances do not
-collide. First-run migration copies unnamespaced shared data, then
-instance-scoped `2.8.1` pre-release test data, then existing `2.8.0` app-data,
-then older launcher-local `.minecraft/config/lifetime-stat-tracker/` data into
-the active player-profile namespace when that namespace is empty. Each legacy
-source is auto-imported only once. Verification passed with `git diff --check`
-and `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
-
-Last published release: GitHub Actions published `2.8.0` for every supported
+Current checkpoint: GitHub Actions has published `2.8.1` for every supported
 compatibility-group profile from Minecraft `1.20` through `26.2-pre-3`.
-Workflow run `27083542931` passed both client and dedicated-server packaged-jar
+Workflow run `27427962037` passed both client and dedicated-server packaged-jar
 smoke launches for every exact runtime listed by the four supported profiles
-before upload. The release is live on Modrinth as version ids `V3VoLsSk`,
-`dzqk8kHN`, `CbC3i6YC`, and `Jqbl1MUu`. Annotated Git tag `v2.8.0` and the
+before upload. The release is live on Modrinth as version ids `Liam40rI`,
+`zudjY2Mu`, `qviT48uq`, and `3t8KoEjo`. Annotated Git tag `v2.8.1` and the
 matching GitHub Release point at publish source commit
-`0856f289588256b2a68011c1eb3b64319bf2d96f`.
+`4156105756768e684889fd25a20dd3b8b3c5136a`. The live Modrinth project page was
+updated from `gradle/modrinth-project-pages.md` with readback verification; API
+snapshots are saved under ignored `build/modrinth/` artifacts.
 
 ## Project Workflow
 
@@ -330,6 +318,21 @@ matching GitHub Release point at publish source commit
    - Added `gradle/release-notes/2.8.1.md`.
    - Verified `git diff --check` and
      `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
+20. `2.8.1` shared storage release:
+   - Pushed publish source commit `4156105` to `main`.
+   - Ran guarded live Modrinth publish workflow `27427962037` from commit
+     `4156105756768e684889fd25a20dd3b8b3c5136a`.
+   - The workflow passed client and dedicated-server smoke launches for every
+     exact runtime listed by the supported profiles before upload.
+   - Published the compatibility-group Modrinth versions:
+     - `2.8.1+mc1.20-1.20.4` as Modrinth version `Liam40rI`.
+     - `2.8.1+mc1.20.5-1.21.10` as Modrinth version `zudjY2Mu`.
+     - `2.8.1+mc1.21.11` as Modrinth version `qviT48uq`.
+     - `2.8.1+mc26.1-26.2-pre-3` as Modrinth version `3t8KoEjo`.
+   - Created annotated tag `v2.8.1` and GitHub Release
+     `Lifetime Stat Tracker 2.8.1`, both pointing at the publish source commit.
+   - Updated the live Modrinth project page from
+     `gradle/modrinth-project-pages.md` with readback verification.
 
 ## Current Compatibility Conclusion
 

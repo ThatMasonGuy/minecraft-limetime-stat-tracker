@@ -100,6 +100,18 @@ All notable project changes will be documented here.
   auto-imported into only one player-profile namespace.
 - Verified the `2.8.1` storage namespace patch with `git diff --check` and
   `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
+- Published the validated `2.8.1+mc...` compatibility-group Modrinth versions
+  through GitHub Actions run `27427962037`, after every exact supported runtime
+  passed both client and dedicated-server packaged-jar smoke launches:
+  - `2.8.1+mc1.20-1.20.4` as Modrinth version `Liam40rI`.
+  - `2.8.1+mc1.20.5-1.21.10` as Modrinth version `zudjY2Mu`.
+  - `2.8.1+mc1.21.11` as Modrinth version `qviT48uq`.
+  - `2.8.1+mc26.1-26.2-pre-3` as Modrinth version `3t8KoEjo`.
+- Created annotated tag `v2.8.1` and GitHub Release
+  `Lifetime Stat Tracker 2.8.1` at publish source commit
+  `4156105756768e684889fd25a20dd3b8b3c5136a`.
+- Updated the live Modrinth project-page copy from
+  `gradle/modrinth-project-pages.md` with API readback verification.
 - Bumped the prepared Modrinth release version to `2.8.0`.
 - Moved runtime persistence from Fabric's launcher-local config directory to a
   fixed per-user app-data directory outside `.minecraft`, so multiple launchers
