@@ -12,10 +12,12 @@ Run this on the server that has access to the world folders, for example:
     --exclude-world Hardcore_World_14 \
     --exclude-world Shared_Health_Hardcore_18
 
-Then copy the generated JSON files into the Lifetime Stat Tracker data folder:
-  Windows: %APPDATA%\LifetimeStatTracker\
-  macOS:   ~/Library/Application Support/LifetimeStatTracker/
-  Linux:   $XDG_DATA_HOME/lifetime-stat-tracker/ or ~/.local/share/lifetime-stat-tracker/
+Then copy the generated JSON files into the active Lifetime Stat Tracker
+instance/profile data folder under the shared root:
+  Windows: %APPDATA%\TempestStudios\Lifetime-Stat-Tracker\
+  macOS:   ~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/
+  Linux:   $XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/ or ~/.local/share/tempest-studios/lifetime-stat-tracker/
+  Namespace: instances/<instance>/profiles/<player profile>/
 """
 
 from __future__ import annotations

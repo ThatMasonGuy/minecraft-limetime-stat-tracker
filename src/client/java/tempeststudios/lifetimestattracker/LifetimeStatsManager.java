@@ -6,6 +6,7 @@ import com.google.gson.reflect.TypeToken;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.User;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.stats.Stat;
@@ -27,6 +28,14 @@ import java.util.stream.Stream;
 public class LifetimeStatsManager {
 
     private static final String MOD_FOLDER = "lifetime-stat-tracker";
+    private static final String SHARED_VENDOR_FOLDER = "TempestStudios";
+    private static final String SHARED_DATA_FOLDER = "Lifetime-Stat-Tracker";
+    private static final String LINUX_SHARED_VENDOR_FOLDER = "tempest-studios";
+    private static final String INSTANCES_FOLDER = "instances";
+    private static final String PROFILES_FOLDER = "profiles";
+    private static final String MIGRATION_CLAIMS_FOLDER = "migration-claims";
+    private static final String DEFAULT_INSTANCE_NAMESPACE = "unknown-instance";
+    private static final String DEFAULT_PROFILE_NAMESPACE = "unknown-profile";
     private static final String TOTALS_FILE = "totals.json";
     private static final String SNAPSHOTS_FILE = "snapshots.json";
     private static final String ADVANCEMENTS_FILE = "advancements.json";
@@ -99,6 +108,7 @@ public class LifetimeStatsManager {
     private int lastHighWaterSkips = 0;
 
     private boolean initialized = false;
+    private Path activeDataDir = null;
 
     // ─────────────────────────────────────────────────────────────
     // World Stats container
@@ -130,13 +140,7 @@ public class LifetimeStatsManager {
             return;
         initialized = true;
 
-        migrateLegacyConfigDataIfNeeded();
-        ensureFilesExist();
-        loadTotals();
-        loadSnapshots();
-        loadAdvancements();
-        loadWorldStats();
-        repairLoadedData();
+        ensureStorageNamespaceLoaded();
 
         System.out.println("[LifetimeStatTracker] Init complete @ " + Instant.now()
                 + " totalsKeys=" + totals.size()
@@ -146,6 +150,7 @@ public class LifetimeStatsManager {
     }
 
     public void onJoin() {
+        ensureStorageNamespaceLoaded();
         serverWorldId = null;
         serverWorldDisplayName = null;
         waitingForServerWorldIdentity = isConnectedToMultiplayerServer();
@@ -181,6 +186,7 @@ public class LifetimeStatsManager {
     }
 
     public void onServerWorldIdentity(String worldId, String displayName) {
+        ensureStorageNamespaceLoaded();
         serverWorldId = cleanIdentity(worldId);
         serverWorldDisplayName = cleanIdentity(displayName);
         waitingForServerWorldIdentity = false;
@@ -232,6 +238,7 @@ public class LifetimeStatsManager {
     public void onStatsPacket(Object2IntMap<Stat<?>> packetStats) {
         if (!initialized)
             init();
+        ensureStorageNamespaceLoaded();
 
         String handle = computeHandle();
 
@@ -602,6 +609,7 @@ public class LifetimeStatsManager {
         if (!initialized) {
             init();
         }
+        ensureStorageNamespaceLoaded();
 
         try {
             Path backupDir = backupDataFiles("clear-" + System.currentTimeMillis());
@@ -769,9 +777,13 @@ public class LifetimeStatsManager {
     }
 
     private static String sanitizeHandlePart(String value) {
+        return sanitizeNamespacePart(value, "unknown_server_world");
+    }
+
+    private static String sanitizeNamespacePart(String value, String fallback) {
         String cleaned = cleanIdentity(value);
         if (cleaned == null) {
-            return "unknown_server_world";
+            return fallback;
         }
         StringBuilder out = new StringBuilder();
         for (int i = 0; i < cleaned.length(); i++) {
@@ -784,12 +796,46 @@ public class LifetimeStatsManager {
                 out.append('_');
             }
         }
-        return out.isEmpty() ? "unknown_server_world" : out.toString();
+        return out.isEmpty() ? fallback : out.toString();
     }
 
     // ─────────────────────────────────────────────────────────────
     // Disk I/O
     // ─────────────────────────────────────────────────────────────
+
+    private void ensureStorageNamespaceLoaded() {
+        Path desiredDataDir = resolveNamespacedDataDir();
+        if (activeDataDir != null && samePath(activeDataDir, desiredDataDir)) {
+            return;
+        }
+
+        Path previousDataDir = activeDataDir;
+        activeDataDir = desiredDataDir;
+        resetLoadedData();
+        migrateLegacyDataIfNeeded();
+        ensureFilesExist();
+        loadTotals();
+        loadSnapshots();
+        loadAdvancements();
+        loadWorldStats();
+        repairLoadedData();
+
+        if (previousDataDir == null) {
+            System.out.println("[LifetimeStatTracker] Data namespace active: " + activeDataDir.toAbsolutePath());
+        } else {
+            System.out.println("[LifetimeStatTracker] Data namespace changed from "
+                    + previousDataDir.toAbsolutePath()
+                    + " to "
+                    + activeDataDir.toAbsolutePath());
+        }
+    }
+
+    private void resetLoadedData() {
+        totals.clear();
+        snapshotsByHandle.clear();
+        worldStats.clear();
+        advancementsByHandle.clear();
+    }
 
     private void applyPendingManualSeed(Map<String, Long> packetSnapshot) {
         String handle = pendingManualSeedHandle;
@@ -996,14 +1042,89 @@ public class LifetimeStatsManager {
     }
 
     public Path getModDir() {
-        return resolveGlobalDataDir();
+        return activeDataDir != null ? activeDataDir : resolveNamespacedDataDir();
     }
 
     private Path getLegacyModDir() {
         return FabricLoader.getInstance().getConfigDir().resolve(MOD_FOLDER);
     }
 
+    private static Path resolveNamespacedDataDir() {
+        return resolveGlobalDataDir()
+                .resolve(INSTANCES_FOLDER)
+                .resolve(currentInstanceNamespace())
+                .resolve(PROFILES_FOLDER)
+                .resolve(currentProfileNamespace());
+    }
+
+    private static String currentInstanceNamespace() {
+        try {
+            Path gameDir = FabricLoader.getInstance().getGameDir().toAbsolutePath().normalize();
+            Path fileName = gameDir.getFileName();
+            String label = sanitizeNamespacePart(fileName != null ? fileName.toString() : "instance",
+                    DEFAULT_INSTANCE_NAMESPACE);
+            return label + "-" + stableNamespaceId(gameDir.toString());
+        } catch (Throwable ignored) {
+            return DEFAULT_INSTANCE_NAMESPACE;
+        }
+    }
+
+    private static String currentProfileNamespace() {
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc == null) {
+                return DEFAULT_PROFILE_NAMESPACE;
+            }
+            User user = mc.getUser();
+            if (user != null && user.getProfileId() != null) {
+                return "uuid-" + sanitizeNamespacePart(user.getProfileId().toString(), DEFAULT_PROFILE_NAMESPACE);
+            }
+
+            String name = user != null ? user.getName() : null;
+            if (name != null && !name.isBlank()) {
+                return "name-" + sanitizeNamespacePart(name, DEFAULT_PROFILE_NAMESPACE);
+            }
+        } catch (Throwable ignored) {
+        }
+        return DEFAULT_PROFILE_NAMESPACE;
+    }
+
+    private static String stableNamespaceId(String value) {
+        return UUID.nameUUIDFromBytes(value.getBytes(StandardCharsets.UTF_8)).toString().substring(0, 8);
+    }
+
     private static Path resolveGlobalDataDir() {
+        String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        String home = System.getProperty("user.home", "");
+
+        if (osName.contains("win")) {
+            String appData = System.getenv("APPDATA");
+            if (appData != null && !appData.isBlank()) {
+                return Path.of(appData, SHARED_VENDOR_FOLDER, SHARED_DATA_FOLDER);
+            }
+            if (home != null && !home.isBlank()) {
+                return Path.of(home, "AppData", "Roaming", SHARED_VENDOR_FOLDER, SHARED_DATA_FOLDER);
+            }
+        }
+
+        if (osName.contains("mac")) {
+            if (home != null && !home.isBlank()) {
+                return Path.of(home, "Library", "Application Support", SHARED_VENDOR_FOLDER, SHARED_DATA_FOLDER);
+            }
+        } else {
+            String xdgDataHome = System.getenv("XDG_DATA_HOME");
+            if (xdgDataHome != null && !xdgDataHome.isBlank()) {
+                return Path.of(xdgDataHome, LINUX_SHARED_VENDOR_FOLDER, MOD_FOLDER);
+            }
+            if (home != null && !home.isBlank()) {
+                return Path.of(home, ".local", "share", LINUX_SHARED_VENDOR_FOLDER, MOD_FOLDER);
+            }
+        }
+
+        return Path.of(LINUX_SHARED_VENDOR_FOLDER, MOD_FOLDER).toAbsolutePath();
+    }
+
+    private static Path resolvePreviousGlobalDataDir() {
         String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
         String home = System.getProperty("user.home", "");
 
@@ -1047,44 +1168,100 @@ public class LifetimeStatsManager {
         return getModDir().resolve(WORLD_STATS_FILE);
     }
 
-    private void migrateLegacyConfigDataIfNeeded() {
-        Path legacyDir = getLegacyModDir();
+    private void migrateLegacyDataIfNeeded() {
         Path dataDir = getModDir();
-        if (samePath(legacyDir, dataDir) || !hasTrackedData(legacyDir)) {
+        Path unnamespacedSharedDir = resolveGlobalDataDir();
+        Path previousGlobalDir = resolvePreviousGlobalDataDir();
+        Path launcherLocalDir = getLegacyModDir();
+
+        if (hasTrackedData(dataDir)) {
+            logMigrationSkippedBecauseTargetExists(unnamespacedSharedDir, dataDir, "unnamespaced shared-folder");
+            logMigrationSkippedBecauseTargetExists(previousGlobalDir, dataDir, "previous app-data");
+            logMigrationSkippedBecauseTargetExists(launcherLocalDir, dataDir, "launcher-local");
             return;
         }
 
-        if (hasTrackedData(dataDir)) {
-            System.out.println("[LifetimeStatTracker] Found launcher-local data at "
-                    + legacyDir.toAbsolutePath()
-                    + " but global data already exists at "
-                    + dataDir.toAbsolutePath()
-                    + "; leaving legacy data untouched.");
+        if (migrateLegacyDataSourceIfNeeded(unnamespacedSharedDir, dataDir, "unnamespaced shared-folder")) {
             return;
+        }
+
+        if (migrateLegacyDataSourceIfNeeded(previousGlobalDir, dataDir, "previous app-data")) {
+            return;
+        }
+
+        migrateLegacyDataSourceIfNeeded(launcherLocalDir, dataDir, "launcher-local");
+    }
+
+    private void logMigrationSkippedBecauseTargetExists(Path sourceDir, Path dataDir, String sourceLabel) {
+        if (samePath(sourceDir, dataDir) || !hasTrackedData(sourceDir)) {
+            return;
+        }
+
+        System.out.println("[LifetimeStatTracker] Found " + sourceLabel + " data at "
+                + sourceDir.toAbsolutePath()
+                + " but shared data already exists at "
+                + dataDir.toAbsolutePath()
+                + "; leaving legacy data untouched.");
+    }
+
+    private boolean migrateLegacyDataSourceIfNeeded(Path sourceDir, Path dataDir, String sourceLabel) {
+        if (samePath(sourceDir, dataDir) || !hasTrackedData(sourceDir)) {
+            return false;
+        }
+
+        if (isMigrationSourceClaimed(sourceDir, sourceLabel)) {
+            System.out.println("[LifetimeStatTracker] Found " + sourceLabel + " data at "
+                    + sourceDir.toAbsolutePath()
+                    + " but that legacy source was already migrated into another namespace;"
+                    + " leaving legacy data untouched.");
+            return false;
         }
 
         try {
             Files.createDirectories(dataDir);
             for (String fileName : DATA_FILES) {
-                Path source = legacyDir.resolve(fileName);
+                Path source = sourceDir.resolve(fileName);
                 if (Files.exists(source)) {
                     Files.copy(source, dataDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
                 }
             }
-            copyDirectoryIfExists(legacyDir.resolve("backups"), dataDir.resolve("backups"));
-            System.out.println("[LifetimeStatTracker] Migrated launcher-local data from "
-                    + legacyDir.toAbsolutePath()
+            copyDirectoryIfExists(sourceDir.resolve("backups"), dataDir.resolve("backups"));
+            markMigrationSourceClaimed(sourceDir, dataDir, sourceLabel);
+            System.out.println("[LifetimeStatTracker] Migrated " + sourceLabel + " data from "
+                    + sourceDir.toAbsolutePath()
                     + " to "
                     + dataDir.toAbsolutePath()
                     + ". Old files were left untouched.");
         } catch (Exception e) {
-            System.out.println("[LifetimeStatTracker] Failed to migrate launcher-local data from "
-                    + legacyDir.toAbsolutePath()
+            System.out.println("[LifetimeStatTracker] Failed to migrate " + sourceLabel + " data from "
+                    + sourceDir.toAbsolutePath()
                     + " to "
                     + dataDir.toAbsolutePath()
                     + ": "
                     + e.getMessage());
         }
+        return true;
+    }
+
+    private static boolean isMigrationSourceClaimed(Path sourceDir, String sourceLabel) {
+        return Files.exists(getMigrationClaimPath(sourceDir, sourceLabel));
+    }
+
+    private static void markMigrationSourceClaimed(Path sourceDir, Path dataDir, String sourceLabel) throws IOException {
+        Path claimPath = getMigrationClaimPath(sourceDir, sourceLabel);
+        Files.createDirectories(claimPath.getParent());
+        Files.writeString(claimPath,
+                "source_label=" + sourceLabel + "\n"
+                        + "source_path=" + sourceDir.toAbsolutePath().normalize() + "\n"
+                        + "target_path=" + dataDir.toAbsolutePath().normalize() + "\n"
+                        + "imported_at=" + Instant.now() + "\n",
+                StandardCharsets.UTF_8);
+    }
+
+    private static Path getMigrationClaimPath(Path sourceDir, String sourceLabel) {
+        String readableSource = sanitizeNamespacePart(sourceLabel, "legacy-source");
+        String sourceId = stableNamespaceId(sourceDir.toAbsolutePath().normalize().toString());
+        return resolveGlobalDataDir().resolve(MIGRATION_CLAIMS_FOLDER).resolve(readableSource + "-" + sourceId + ".txt");
     }
 
     private static boolean samePath(Path first, Path second) {

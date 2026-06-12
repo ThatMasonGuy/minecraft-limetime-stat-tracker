@@ -19,9 +19,11 @@ statistics across worlds, servers, Realms, deleted saves, and resets.
 
 Minecraft normally stores stats per world. If a world is renamed, replaced,
 deleted, or reset, that history can disappear. Lifetime Stat Tracker keeps a
-separate local record in a fixed per-user app-data folder outside `.minecraft`,
-so play time, deaths, distance travelled, mob kills, jumps, and advancement
-progress can keep building over time even when you use different launchers.
+separate local record in a shared per-user Tempest Studios data folder outside
+`.minecraft`, with data separated by Minecraft instance and player profile, so
+play time, deaths, distance travelled, mob kills, jumps, and advancement
+progress can keep building over time without merging unrelated accounts or
+same-named worlds from different installations.
 
 It works client-side for singleplayer, LAN, Realms, and multiplayer servers.
 For unmodded servers, it tracks a safe server-level aggregate so stats are not
@@ -39,7 +41,8 @@ send the client a reliable world identity.
 - Client-only support for singleplayer, Realms, LAN, and multiplayer
 - Optional server install for reliable per-world Fabric server identity
 - Manual tools for correcting ambiguous unmodded server tracking
-- Launcher-agnostic local JSON storage with backups for destructive commands
+- Launcher-agnostic shared JSON storage scoped by instance and player profile
+  with backups for destructive commands
 
 ## Good for
 
@@ -56,12 +59,25 @@ Install Fabric Loader, Fabric API, and the Lifetime Stat Tracker jar that
 matches your Minecraft version.
 
 Lifetime Stat Tracker reads the stats Minecraft sends to your client and saves
-JSON history in a fixed per-user app-data folder outside `.minecraft`. This
-keeps one lifetime history across different launchers and launcher instances.
-When upgrading from an older release, the mod copies existing
-`.minecraft/config/lifetime-stat-tracker/` data into that app-data folder on
-first run if the app-data folder is still empty; old files are left in place as
-a backup.
+JSON history in a shared per-user Tempest Studios data folder outside
+`.minecraft`:
+
+```text
+Windows: %APPDATA%\TempestStudios\Lifetime-Stat-Tracker\
+macOS:   ~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/
+Linux:   $XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/ or ~/.local/share/tempest-studios/lifetime-stat-tracker/
+```
+
+This keeps one lifetime history across different launchers and launcher
+instances without merging different Minecraft accounts or same-named worlds from
+different game directories. JSON files are stored under
+`instances/<instance>/profiles/<player profile>/` inside the shared root.
+
+When upgrading from older storage layouts, the mod copies existing data into the
+active instance/profile folder on first run if that folder is still empty. It
+checks unnamespaced shared-folder data first, then `2.8.0` app-data, then older
+`.minecraft/config/lifetime-stat-tracker/` data as a fallback. Each legacy
+source is auto-imported only once, and old files are left in place as a backup.
 
 The mod does not require a server install to be useful. Client-only installs
 work for singleplayer, LAN, Realms, and multiplayer, but unmodded servers and

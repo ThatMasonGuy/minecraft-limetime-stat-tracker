@@ -1,6 +1,18 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: GitHub Actions has published `2.8.0` for every supported
+Current checkpoint: `2.8.1` patch prep is implemented and locally verified. It
+moves runtime persistence from the standalone Lifetime Stat Tracker app-data
+folder into the shared Tempest Studios app-data namespace. Actual JSON files are
+scoped under `instances/<instance>/profiles/<player profile>/` so different
+game directories and different Minecraft accounts do not merge totals,
+snapshots, advancements, or same-named local worlds. First-run migration copies
+unnamespaced shared data, then existing `2.8.0` app-data, then older
+launcher-local `.minecraft/config/lifetime-stat-tracker/` data into the active
+namespace when that namespace is empty. Each legacy source is auto-imported only
+once. Verification passed with `git diff --check` and
+`.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
+
+Last published release: GitHub Actions published `2.8.0` for every supported
 compatibility-group profile from Minecraft `1.20` through `26.2-pre-3`.
 Workflow run `27083542931` passed both client and dedicated-server packaged-jar
 smoke launches for every exact runtime listed by the four supported profiles
@@ -29,11 +41,16 @@ matching GitHub Release point at publish source commit
   multiplayer, and Realms.
 - Optional server install improves per-world server identity by sending a custom
   world identity payload to the client.
-- Runtime persistence is under a fixed per-user app-data directory outside
-  `.minecraft`: `%APPDATA%\LifetimeStatTracker\` on Windows,
-  `~/Library/Application Support/LifetimeStatTracker/` on macOS, and
-  `$XDG_DATA_HOME/lifetime-stat-tracker/` or
-  `~/.local/share/lifetime-stat-tracker/` on Linux.
+- Runtime persistence is under a shared per-user Tempest Studios data directory
+  outside `.minecraft`: `%APPDATA%\TempestStudios\Lifetime-Stat-Tracker\` on
+  Windows,
+  `~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/` on
+  macOS, and `$XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/` or
+  `~/.local/share/tempest-studios/lifetime-stat-tracker/` on Linux.
+- Active JSON files live under
+  `<shared root>/instances/<instance>/profiles/<player profile>/`, where the
+  instance namespace is based on Fabric's active game directory and the profile
+  namespace is based on the current Minecraft profile id when available.
 - Data files are `totals.json`, `snapshots.json`, `world_stats.json`, and
   `advancements.json`.
 - Backup-backed destructive operations write under
@@ -285,6 +302,26 @@ matching GitHub Release point at publish source commit
      - `2.8.0+mc26.1-26.2-pre-3` as Modrinth version `Jqbl1MUu`.
    - Created annotated tag `v2.8.0` and GitHub Release
      `Lifetime Stat Tracker 2.8.0`, both pointing at the publish source commit.
+19. `2.8.1` shared Tempest Studios data folder prep:
+   - Bumped `mod_version` to `2.8.1`.
+   - Changed runtime persistence to the shared Tempest Studios data namespace:
+     `%APPDATA%\TempestStudios\Lifetime-Stat-Tracker\` on Windows,
+     `~/Library/Application Support/TempestStudios/Lifetime-Stat-Tracker/` on
+     macOS, and `$XDG_DATA_HOME/tempest-studios/lifetime-stat-tracker/` or
+     `~/.local/share/tempest-studios/lifetime-stat-tracker/` on Linux.
+   - Scoped active JSON under `instances/<instance>/profiles/<player profile>/`
+     so two Minecraft accounts, or two game directories with the same local
+     world name, no longer merge totals, snapshots, world stats, or
+     advancements.
+   - Added guarded migration into the active namespace from unnamespaced shared
+     data first, then the `2.8.0` app-data folder, then older
+     `.minecraft/config/lifetime-stat-tracker/` data.
+   - Added migration claim markers so each legacy source is auto-imported into
+     only one namespace, while leaving every legacy source untouched as a
+     backup.
+   - Added `gradle/release-notes/2.8.1.md`.
+   - Verified `git diff --check` and
+     `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
 
 ## Current Compatibility Conclusion
 
