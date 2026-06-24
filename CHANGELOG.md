@@ -96,6 +96,16 @@ All notable project changes will be documented here.
 - Updated the `26.x` Fabric Loader dependency floor back to `0.19.2+` after
   smoke testing showed that requiring `0.19.3+` would unnecessarily drop the
   existing `26.1` runtimes.
+- Published the validated `2.8.2+mc...` compatibility-group Modrinth versions
+  through GitHub Actions run `28090254589`, after every exact supported runtime
+  passed both client and dedicated-server packaged-jar smoke launches:
+  - `2.8.2+mc1.20-1.20.4` as Modrinth version `J0G9eT5m`.
+  - `2.8.2+mc1.20.5-1.21.10` as Modrinth version `4VbnWATi`.
+  - `2.8.2+mc1.21.11` as Modrinth version `fid0xQll`.
+  - `2.8.2+mc26.1-26.3-snapshot-1` as Modrinth version `Vu87ojpd`.
+- Created annotated tag `v2.8.2` and GitHub Release
+  `Lifetime Stat Tracker 2.8.2` at publish source commit
+  `328beb7d454e9723351fe81989a89b56fa8fc378`.
 - Bumped the prepared Modrinth release version to `2.8.1`.
 - Moved runtime persistence from the standalone Lifetime Stat Tracker app-data
   folder into the shared Tempest Studios namespace:

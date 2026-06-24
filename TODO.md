@@ -1,15 +1,13 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: `2.8.2` release prep has promoted the active `26.x` release
-profile to `26.1-26.3-snapshot-1`, compiled from the stable `26.2` anchor and
-using the existing `26.x` shims. Local
-`.\gradlew.bat smokeTestSelected "-Plifetimestattracker_smoke_profiles=26.1-26.3-snapshot-1" --no-daemon --console=plain`
-passed both client-only and dedicated-server packaged-jar launches for
-Minecraft `26.1`, `26.1.1`, `26.1.2`, stable `26.2`, and
-`26.3-snapshot-1`. `2.8.1` remains the latest live Modrinth/GitHub release
-until the guarded publish workflow uploads `2.8.2`; its run `27427962037`
-published version ids `Liam40rI`, `zudjY2Mu`, `qviT48uq`, and `3t8KoEjo` from
-publish source commit `4156105756768e684889fd25a20dd3b8b3c5136a`.
+Current checkpoint: GitHub Actions has published `2.8.2` for every supported
+compatibility-group profile from Minecraft `1.20` through `26.3-snapshot-1`.
+Workflow run `28090254589` passed both client and dedicated-server packaged-jar
+smoke launches for every exact runtime listed by the four supported profiles
+before upload. The release is live on Modrinth as version ids `J0G9eT5m`,
+`4VbnWATi`, `fid0xQll`, and `Vu87ojpd`. Annotated Git tag `v2.8.2` and the
+matching GitHub Release point at publish source commit
+`328beb7d454e9723351fe81989a89b56fa8fc378`.
 
 ## Project Workflow
 
@@ -354,6 +352,20 @@ publish source commit `4156105756768e684889fd25a20dd3b8b3c5136a`.
      `.\gradlew.bat smokeTestSelected "-Plifetimestattracker_smoke_profiles=26.1-26.3-snapshot-1" --no-daemon --console=plain`.
    - Verified all supported release profiles with
      `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
+22. `2.8.2` guarded Modrinth release:
+   - Pushed publish source commit `328beb7` to `main`.
+   - Ran guarded live Modrinth publish workflow `28090254589` from commit
+     `328beb7d454e9723351fe81989a89b56fa8fc378`.
+   - The workflow passed client and dedicated-server smoke launches for every
+     exact runtime listed by the supported profiles before upload, including
+     stable `26.2` and `26.3-snapshot-1` on the refreshed `26.x` lane.
+   - Published the compatibility-group Modrinth versions:
+     - `2.8.2+mc1.20-1.20.4` as Modrinth version `J0G9eT5m`.
+     - `2.8.2+mc1.20.5-1.21.10` as Modrinth version `4VbnWATi`.
+     - `2.8.2+mc1.21.11` as Modrinth version `fid0xQll`.
+     - `2.8.2+mc26.1-26.3-snapshot-1` as Modrinth version `Vu87ojpd`.
+   - Created annotated tag `v2.8.2` and GitHub Release
+     `Lifetime Stat Tracker 2.8.2`, both pointing at the publish source commit.
 
 ## Current Compatibility Conclusion
 

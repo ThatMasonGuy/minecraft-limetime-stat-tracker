@@ -31,7 +31,9 @@ GitHub Actions candidate smoke run `26934205756` passed the original promoted
 prerelease dependency metadata. On 2026-06-24, local
 `smokeTestSelected -Plifetimestattracker_smoke_profiles=26.1-26.3-snapshot-1`
 passed both client and dedicated-server launches for `26.1`, `26.1.1`,
-`26.1.2`, stable `26.2`, and `26.3-snapshot-1`.
+`26.1.2`, stable `26.2`, and `26.3-snapshot-1`. GitHub Actions Modrinth
+publish run `28090254589` repeated the full supported-profile client and
+dedicated-server smoke gate before uploading `2.8.2`.
 
 Each recorded pass used install set `lifetime-stat-tracker-client-only`, reached
 the client tick loop, force-loaded `ClientPacketListener` and
@@ -41,8 +43,9 @@ cleanly.
 Dedicated server smoke is a live Gradle gate: `ciValidation` and
 `publishValidation` run the server launch tasks as well as the client launch
 tasks. GitHub Actions Modrinth publish run `26943407860` proved this gate for
-release `2.7.1`, and the 2026-06-24 local `26.1-26.3-snapshot-1` promotion
-backfilled client and server pass evidence for that active 26.x profile.
+release `2.7.1`, and the 2026-06-24 `2.8.2` publish run `28090254589`
+validated the active `26.1-26.3-snapshot-1` profile in GitHub Actions before
+upload.
 
 There are currently no candidate release profiles. New candidates should be
 tracked in `gradle/smoke-tests.json` as `pending` until every exact Minecraft
