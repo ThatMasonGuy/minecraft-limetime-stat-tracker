@@ -1,6 +1,6 @@
 # Lifetime Stat Tracker
 
-A Fabric mod for Minecraft `1.20` through `26.2-pre-3` that tracks lifetime
+A Fabric mod for Minecraft `1.20` through `26.3-snapshot-1` that tracks lifetime
 stats across worlds, servers, Realms, and deleted saves.
 
 Unlike vanilla per-world stats, Lifetime Stat Tracker keeps cumulative totals in
@@ -20,8 +20,9 @@ singleplayer worlds from different game directories still stay distinct.
 
 ## Supported Environment
 
-- Minecraft: `1.20` through `26.2-pre-3`, published as compatibility-group jars
-  for `1.20-1.20.4`, `1.20.5-1.21.10`, `1.21.11`, and `26.1-26.2-pre-3`
+- Minecraft: `1.20` through `26.3-snapshot-1`, published as compatibility-group jars
+  for `1.20-1.20.4`, `1.20.5-1.21.10`, `1.21.11`, and
+  `26.1-26.3-snapshot-1`
 - Fabric Loader: `0.18.4+` for `1.20`/`1.21` profiles; `0.19.2+` for `26.x`
 - Fabric API: required; install the Fabric API build matching your Minecraft
   version

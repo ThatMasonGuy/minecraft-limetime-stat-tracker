@@ -24,23 +24,25 @@ All four release profiles have passing packaged-jar client smoke records:
 - `1.20-1.20.4`
 - `1.20.5-1.21.10`
 - `1.21.11`
-- `26.1-26.2-pre-3`
+- `26.1-26.3-snapshot-1`
 
-GitHub Actions candidate smoke run `26934205756` passed every listed exact
-runtime except `26.2-pre-3`. After the Fabric Loader prerelease dependency
-metadata fix, focused run `26935246770` passed `26.2-pre-3`.
+GitHub Actions candidate smoke run `26934205756` passed the original promoted
+`26.1-26.2-pre-3` exact runtimes after focused run `26935246770` fixed the
+prerelease dependency metadata. On 2026-06-24, local
+`smokeTestSelected -Plifetimestattracker_smoke_profiles=26.1-26.3-snapshot-1`
+passed both client and dedicated-server launches for `26.1`, `26.1.1`,
+`26.1.2`, stable `26.2`, and `26.3-snapshot-1`.
 
 Each recorded pass used install set `lifetime-stat-tracker-client-only`, reached
 the client tick loop, force-loaded `ClientPacketListener` and
 `ClientAdvancements`, printed `LIFETIMESTATTRACKER_SMOKE_TEST_PASS`, and exited
 cleanly.
 
-Dedicated server smoke coverage is not backfilled into the historical matrix
-yet. It is a live Gradle gate: `ciValidation` and `publishValidation` now run
-the server launch tasks as well as the client launch tasks. GitHub Actions
-Modrinth publish run `26943407860` proved this gate for release `2.7.1`,
-passing both client and dedicated-server smoke launches for every exact
-Minecraft runtime published by the four supported compatibility-group profiles.
+Dedicated server smoke is a live Gradle gate: `ciValidation` and
+`publishValidation` run the server launch tasks as well as the client launch
+tasks. GitHub Actions Modrinth publish run `26943407860` proved this gate for
+release `2.7.1`, and the 2026-06-24 local `26.1-26.3-snapshot-1` promotion
+backfilled client and server pass evidence for that active 26.x profile.
 
 There are currently no candidate release profiles. New candidates should be
 tracked in `gradle/smoke-tests.json` as `pending` until every exact Minecraft

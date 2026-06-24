@@ -1,15 +1,15 @@
 # Lifetime Stat Tracker TODO
 
-Current checkpoint: GitHub Actions has published `2.8.1` for every supported
-compatibility-group profile from Minecraft `1.20` through `26.2-pre-3`.
-Workflow run `27427962037` passed both client and dedicated-server packaged-jar
-smoke launches for every exact runtime listed by the four supported profiles
-before upload. The release is live on Modrinth as version ids `Liam40rI`,
-`zudjY2Mu`, `qviT48uq`, and `3t8KoEjo`. Annotated Git tag `v2.8.1` and the
-matching GitHub Release point at publish source commit
-`4156105756768e684889fd25a20dd3b8b3c5136a`. The live Modrinth project page was
-updated from `gradle/modrinth-project-pages.md` with readback verification; API
-snapshots are saved under ignored `build/modrinth/` artifacts.
+Current checkpoint: `2.8.2` release prep has promoted the active `26.x` release
+profile to `26.1-26.3-snapshot-1`, compiled from the stable `26.2` anchor and
+using the existing `26.x` shims. Local
+`.\gradlew.bat smokeTestSelected "-Plifetimestattracker_smoke_profiles=26.1-26.3-snapshot-1" --no-daemon --console=plain`
+passed both client-only and dedicated-server packaged-jar launches for
+Minecraft `26.1`, `26.1.1`, `26.1.2`, stable `26.2`, and
+`26.3-snapshot-1`. `2.8.1` remains the latest live Modrinth/GitHub release
+until the guarded publish workflow uploads `2.8.2`; its run `27427962037`
+published version ids `Liam40rI`, `zudjY2Mu`, `qviT48uq`, and `3t8KoEjo` from
+publish source commit `4156105756768e684889fd25a20dd3b8b3c5136a`.
 
 ## Project Workflow
 
@@ -333,6 +333,27 @@ snapshots are saved under ignored `build/modrinth/` artifacts.
      `Lifetime Stat Tracker 2.8.1`, both pointing at the publish source commit.
    - Updated the live Modrinth project page from
      `gradle/modrinth-project-pages.md` with readback verification.
+21. `2.8.2` Minecraft `26.2` and `26.3-snapshot-1` release prep:
+   - Bumped `mod_version` to `2.8.2` and added
+     `gradle/release-notes/2.8.2.md`.
+   - Replaced the old supported `26.1-26.2-pre-3` release profile with
+     `26.1-26.3-snapshot-1`, compiled from stable Minecraft `26.2` and mapped
+     to source compat group `26.x`.
+   - Added exact smoke runtime profiles for stable `26.2` and
+     `26.3-snapshot-1`, using Fabric API `0.153.0+26.2` and
+     `0.153.1+26.3`.
+   - Confirmed no new Java shim was needed: the existing `26.x`
+     `ClientCommands` and `PayloadTypeRegistry.clientboundPlay/serverboundPlay`
+     adapters compiled and launched on the new runtimes.
+   - Recorded that Fabric Loader reports the `26.3-snapshot-1` runtime as
+     `26.3-alpha.1`, so the release profile uses
+     `minecraft_dependency=>=26.1 <=26.3-alpha.1` while Modrinth game versions
+     keep the public `26.3-snapshot-1` label.
+   - Verified local client-only and dedicated-server smoke launches for
+     `26.1`, `26.1.1`, `26.1.2`, `26.2`, and `26.3-snapshot-1` with
+     `.\gradlew.bat smokeTestSelected "-Plifetimestattracker_smoke_profiles=26.1-26.3-snapshot-1" --no-daemon --console=plain`.
+   - Verified all supported release profiles with
+     `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
 
 ## Current Compatibility Conclusion
 
@@ -349,13 +370,14 @@ Use this map for the promoted profile implementation:
 - Release profile `1.21.11` stays separate as its own supported profile;
   descriptor-safe helpers now exist, so a later release-planning pass can decide
   whether it should collapse into a broader tested profile.
-- Release profile `26.1-26.2-pre-3` uses source compat group `26.x`.
+- Release profile `26.1-26.3-snapshot-1` uses source compat group `26.x`.
 
 Do not over-split by copying Inventory Sort's GUI-driven groups unless compile
 probes, binary runtime checks, dependency metadata, or smoke tests show a real
 Lifetime Stat Tracker break that prevents one jar from covering the combined
 range. The first implementation pass now compiles and smoke-tests successfully
-for all four release profiles.
+for all four release profiles, and the active `26.x` profile has been refreshed
+through stable `26.2` and `26.3-snapshot-1`.
 
 ## Migration Goal
 
@@ -378,7 +400,7 @@ profiles:
 | `1.20-1.20.4` | `1.20-1.20.4` | 17 | Legacy stat packet accessor, legacy networking, no `RegistryFriendlyByteBuf`/`StreamCodec`; advancement key shape changes inside this range and needs a raw/reflection adapter. |
 | `1.20.5-1.21.10` | `1.20.5-1.21.10` | 21 | Modern typed payloads with `PayloadTypeRegistry.playS2C/playC2S`, `ClientCommandManager`, `ResourceLocation` registry descriptors, and a `File`/`Path` server-directory helper. |
 | `1.21.11` | `1.21.11` | 21 | Same typed payload and command APIs as earlier `1.21.x`, but `Registry#getKey` and `AdvancementHolder#id` now return `Identifier`. May collapse after descriptor-safe helpers exist. |
-| `26.x` | `26.1-26.2-pre-3` | 25 | Java 25/non-remap lane with `ClientCommands` and `PayloadTypeRegistry.clientboundPlay/serverboundPlay`. |
+| `26.x` | `26.1-26.3-snapshot-1` | 25 | Java 25/non-remap lane with `ClientCommands` and `PayloadTypeRegistry.clientboundPlay/serverboundPlay`. |
 
 Only keep a profile supported/publishable while its packaged jar has launched on
 every exact Minecraft version listed in `modrinth_game_versions`.
@@ -445,16 +467,15 @@ every exact Minecraft version listed in `modrinth_game_versions`.
 7. Minecraft `26.x` build lane:
    - Reuse Inventory Sort's proven model where applicable: non-remapping Loom
      for `26.x`, normal dependencies, and plain jar artifacts.
-   - Start with one candidate profile, `26.1-26.2-pre-3`, mapped to source
-     compat group `26.x`.
-   - Split to `26.1-26.1.2` and `26.2-pre-3` only if Fabric dependency metadata,
-     compile anchors, or smoke tests prove that one jar cannot cover both.
+   - Start with broad candidate profiles mapped to source compat group `26.x`
+     and split only if Fabric dependency metadata, compile anchors, or smoke
+     tests prove that one jar cannot cover the proposed exact runtimes.
    - Probe payload, command, packet, advancement, registry key, and server
-     reflection APIs under `26.1.2` and `26.2-pre-3`.
+     reflection APIs whenever a new `26.x` release or snapshot is added.
    - Current status: profile config resolves under Loom `1.16`, Java 25
      toolchain compile passes, source compatibility probes are green for the
-     current `26.2-pre-3` compile anchor, and launcher smoke proof has passed
-     for `26.1`, `26.1.1`, `26.1.2`, and `26.2-pre-3`.
+     stable `26.2` compile anchor, and local client-plus-server smoke proof has
+     passed for `26.1`, `26.1.1`, `26.1.2`, `26.2`, and `26.3-snapshot-1`.
 8. Smoke-test automation:
    - Add a minimal client smoke launcher that installs the packaged release jar,
      reaches the client tick loop, force-loads mixin targets, and exits with a

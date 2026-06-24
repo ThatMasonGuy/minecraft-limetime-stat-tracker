@@ -158,6 +158,41 @@
           "notes": "Packaged release jar launched as lifetime-stat-tracker-client-only after the Fabric Loader prerelease dependency metadata fix, reached the client tick loop, force-loaded ClientPacketListener and ClientAdvancements, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS, and exited cleanly."
         }
       }
+    },
+    "26.1-26.3-snapshot-1": {
+      "profile_id": "26.1-26.3-snapshot-1",
+      "game_versions": {
+        "26.1": {
+          "status": "pass",
+          "tested_at": "2026-06-24",
+          "method": "local smokeTestSelected for profile 26.1-26.3-snapshot-1",
+          "notes": "Packaged 2.8.2 release jar launched as both lifetime-stat-tracker-client-only and lifetime-stat-tracker-server-only, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS and LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS, and exited cleanly."
+        },
+        "26.1.1": {
+          "status": "pass",
+          "tested_at": "2026-06-24",
+          "method": "local smokeTestSelected for profile 26.1-26.3-snapshot-1",
+          "notes": "Packaged 2.8.2 release jar launched as both lifetime-stat-tracker-client-only and lifetime-stat-tracker-server-only, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS and LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS, and exited cleanly."
+        },
+        "26.1.2": {
+          "status": "pass",
+          "tested_at": "2026-06-24",
+          "method": "local smokeTestSelected for profile 26.1-26.3-snapshot-1",
+          "notes": "Packaged 2.8.2 release jar launched as both lifetime-stat-tracker-client-only and lifetime-stat-tracker-server-only, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS and LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS, and exited cleanly."
+        },
+        "26.2": {
+          "status": "pass",
+          "tested_at": "2026-06-24",
+          "method": "local smokeTestSelected for profile 26.1-26.3-snapshot-1",
+          "notes": "Packaged 2.8.2 release jar launched as both lifetime-stat-tracker-client-only and lifetime-stat-tracker-server-only on stable Minecraft 26.2, printed LIFETIMESTATTRACKER_SMOKE_TEST_PASS and LIFETIMESTATTRACKER_SERVER_SMOKE_TEST_PASS, and exited cleanly."
+        },
+        "26.3-snapshot-1": {
+          "status": "pass",
+          "tested_at": "2026-06-24",
+          "method": "local smokeTestSelected for profile 26.1-26.3-snapshot-1",
+          "notes": "Packaged 2.8.2 release jar launched as both lifetime-stat-tracker-client-only and lifetime-stat-tracker-server-only on Minecraft 26.3-snapshot-1, where Fabric Loader reports the runtime as 26.3-alpha.1; both pass markers printed and the launches exited cleanly."
+        }
+      }
     }
   }
 }

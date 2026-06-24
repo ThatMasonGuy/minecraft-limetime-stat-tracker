@@ -1,9 +1,10 @@
 # Minecraft Compatibility
 
 Research date: 2026-06-04
+Last updated: 2026-06-24
 
 Scope: Lifetime Stat Tracker source compatibility from Minecraft `1.20` through
-`26.2-pre-3`, using the Inventory Sort pipeline as the release/profile model but
+`26.3-snapshot-1`, using the Inventory Sort pipeline as the release/profile model but
 auditing this mod's own API surface.
 
 ## Executive Recommendation
@@ -21,10 +22,11 @@ Supported release profile map:
 | `1.20-1.20.4` | `1.20` | `1.20`, `1.20.1`, `1.20.2`, `1.20.3`, `1.20.4` | 17 | `1.20-1.20.4` |
 | `1.20.5-1.21.10` | `1.21.10` | `1.20.5` through `1.21.10` | 21 | `1.20.5-1.21.10` |
 | `1.21.11` | `1.21.11` | `1.21.11` | 21 | `1.21.11` |
-| `26.1-26.2-pre-3` | `26.2-pre-3` | `26.1`, `26.1.1`, `26.1.2`, `26.2-pre-3` | 25 | `26.x` |
+| `26.1-26.3-snapshot-1` | `26.2` | `26.1`, `26.1.1`, `26.1.2`, `26.2`, `26.3-snapshot-1` | 25 | `26.x` |
 
 Compile probes and packaged-jar client smoke tests now pass for this
-four-profile map. Keep `1.21.11` separate as its own proven release profile
+four-profile map. The active `26.x` profile also passed local dedicated-server
+smoke on every exact runtime it lists. Keep `1.21.11` separate as its own proven release profile
 unless a later release-planning pass decides to collapse it into a broader
 tested profile.
 
@@ -47,7 +49,7 @@ names changed.
 | `1.20.5-1.20.6` | record accessor `stats()` returns `Object2IntMap<Stat<?>>` | `AdvancementHolder#id()` | `ResourceLocation` | `CustomPacketPayload`, `RegistryFriendlyByteBuf`, `StreamCodec`, `PayloadTypeRegistry.playS2C/playC2S` | `File` | `ClientCommandManager` |
 | `1.21-1.21.10` | `stats()` | `AdvancementHolder#id()` | `ResourceLocation` | same `playS2C/playC2S` API shape | `Path` | `ClientCommandManager` |
 | `1.21.11` | `stats()` | `AdvancementHolder#id()` | `Identifier` | same `playS2C/playC2S` API shape | `Path` | `ClientCommandManager` |
-| `26.1-26.2-pre-3` | `stats()` | `AdvancementHolder#id()` | `Identifier` | `PayloadTypeRegistry.clientboundPlay/serverboundPlay` | `Path` | `ClientCommands` |
+| `26.1-26.3-snapshot-1` | `stats()` | `AdvancementHolder#id()` | `Identifier` | `PayloadTypeRegistry.clientboundPlay/serverboundPlay` | `Path` | `ClientCommands` |
 
 Observed but currently irrelevant Minecraft changes:
 
@@ -219,7 +221,7 @@ Required shim/build work:
 - Profile-expand `fabric.mod.json` dependencies.
 - Profile-expand the mixin compatibility level.
 - Use per-profile Java toolchains.
-- Use the Inventory Sort `26.x` non-remap pattern for `26.1` and `26.2-pre-3`.
+- Use the Inventory Sort `26.x` non-remap pattern for `26.1+` profiles.
 
 ## Source Compat Group Plan
 
@@ -276,8 +278,8 @@ Collapse trigger:
 
 ### `26.x`
 
-Purpose: Java 25, non-remap forward lane for `26.1-26.1.2` and
-`26.2-pre-3`.
+Purpose: Java 25, non-remap forward lane for `26.1-26.1.2`, stable `26.2`,
+and the first `26.3` snapshot.
 
 Must contain:
 
@@ -286,10 +288,10 @@ Must contain:
 - Java 25 mixin/build metadata
 - Inventory Sort's non-remap release artifact behavior
 
-Start with one candidate release profile for `26.1-26.2-pre-3`. Split into
-`26.1-26.1.2` and `26.2-pre-3` only if Fabric dependency metadata, the chosen
-compile anchor, or smoke tests prove that one jar cannot honestly claim both
-families.
+The active supported release profile is `26.1-26.3-snapshot-1`, compiled
+against stable `26.2` and mapped to source compat group `26.x`. Split this
+profile only if future Fabric dependency metadata, compile anchors, or smoke
+tests prove that one jar cannot honestly claim the listed exact runtimes.
 
 ## Release Profile Notes
 
@@ -330,7 +332,12 @@ After profile support exists:
   compatibility source overlays.
 - Local `javap` inspection of cached Minecraft jars for `1.20`, `1.20.1`,
   `1.20.2`, `1.20.3`, `1.20.4`, `1.20.5`, `1.20.6`, `1.21`, `1.21.6`,
-  `1.21.9`, `1.21.10`, `1.21.11`, `26.1.2`, and `26.2-pre-3`.
+  `1.21.9`, `1.21.10`, `1.21.11`, `26.1.2`, `26.2-pre-3`, `26.2`, and
+  `26.3-snapshot-1`.
+- Local packaged-jar smoke launches on 2026-06-24 for release profile
+  `26.1-26.3-snapshot-1` across `26.1`, `26.1.1`, `26.1.2`, `26.2`, and
+  `26.3-snapshot-1`, including both client-only and dedicated-server install
+  sets.
 - Official Fabric Maven metadata/POMs for the `26.x` Fabric API modules:
   [Fabric API `0.150.0+26.1.2`](https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.150.0+26.1.2/fabric-api-0.150.0+26.1.2.pom),
   [Fabric API `0.150.2+26.2`](https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.150.2+26.2/fabric-api-0.150.2+26.2.pom),

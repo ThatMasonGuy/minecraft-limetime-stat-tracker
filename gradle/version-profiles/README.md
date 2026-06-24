@@ -1,10 +1,11 @@
 # Minecraft Version Profiles
 
 This directory contains the multi-version profile metadata used by Gradle. The
-current supported builds cover Minecraft `1.20` through `26.2-pre-3` through
+current supported builds cover Minecraft `1.20` through `26.3-snapshot-1` through
 four compatibility-group release profiles. Compile probes and packaged-jar
 client smoke tests have passed for every exact game version listed by those
-profiles.
+profiles, and the active `26.x` profile has also passed dedicated-server smoke
+locally for every exact runtime it lists.
 
 ## Goal
 
@@ -28,7 +29,7 @@ unless we intentionally decide to publish more jars.
 
 ```properties
 minecraft_version_profile=1.21.11
-supported_minecraft_version_profiles=1.20-1.20.4,1.20.5-1.21.10,1.21.11,26.1-26.2-pre-3
+supported_minecraft_version_profiles=1.20-1.20.4,1.20.5-1.21.10,1.21.11,26.1-26.3-snapshot-1
 candidate_minecraft_version_profiles=
 ```
 

@@ -6,6 +6,10 @@ All notable project changes will be documented here.
 
 ### Added
 
+- Added `gradle/release-notes/2.8.2.md` for the Minecraft `26.2` and
+  `26.3-snapshot-1` support refresh.
+- Added exact smoke runtime profiles for stable Minecraft `26.2` and
+  `26.3-snapshot-1`.
 - Added the initial Gradle version-profile foundation:
   - Dynamic active-profile loading from `gradle/version-profiles/*.properties`.
   - Supported profile `1.21.11` and candidate profiles `1.20-1.20.4`,
@@ -79,6 +83,19 @@ All notable project changes will be documented here.
 
 ### Changed
 
+- Bumped the prepared Modrinth release version to `2.8.2`.
+- Replaced the supported `26.1-26.2-pre-3` release profile with
+  `26.1-26.3-snapshot-1`, compiled from stable Minecraft `26.2` and still using
+  the existing `26.x` source compatibility overlays.
+- Verified that no new `26.3-snapshot-1` Java shim is needed: local
+  `smokeTestSelected` passed both client-only and dedicated-server packaged-jar
+  launches for `26.1`, `26.1.1`, `26.1.2`, stable `26.2`, and
+  `26.3-snapshot-1`.
+- Verified all supported release profiles with
+  `.\gradlew.bat buildAllVersions --no-daemon --console=plain`.
+- Updated the `26.x` Fabric Loader dependency floor back to `0.19.2+` after
+  smoke testing showed that requiring `0.19.3+` would unnecessarily drop the
+  existing `26.1` runtimes.
 - Bumped the prepared Modrinth release version to `2.8.1`.
 - Moved runtime persistence from the standalone Lifetime Stat Tracker app-data
   folder into the shared Tempest Studios namespace:
